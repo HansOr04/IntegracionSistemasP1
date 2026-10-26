@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Práctica de API · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="practica">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week w3" id="practica">
+  <h2 class="sec">Práctica de API</h2>
+
+  <article class="topic">
+    <h3>5.1 Diseño REST: endpoints bien y mal diseñados <span class="tag pdf">Del PDF</span></h3>
+    <p>Dominio: Orders API (sistema de gestión de pedidos como proveedor; la aplicación web de comercio electrónico como consumidor).</p>
+    <div class="tw"><table><thead><tr><th>Mal diseñado</th><th>Problema</th><th>Mejor diseño</th></tr></thead><tbody>
+      <tr><td><code>POST /createOrder</code></td><td>Verbo en la URL; el método ya indica crear</td><td><code>POST /orders</code> → 201</td></tr>
+      <tr><td><code>GET /getOrder?id=O-9831</code></td><td>Verbo redundante; el id identifica al recurso</td><td><code>GET /orders/O-9831</code> → 200 / 404</td></tr>
+      <tr><td><code>POST /orders/delete/O-9831</code></td><td>Acción en la URL; POST para borrar</td><td><code>DELETE /orders/O-9831</code> → 204</td></tr>
+      <tr><td><code>GET /executeSPCreateOrder</code></td><td>Expone detalle interno (stored procedure) y GET con efectos</td><td><code>POST /orders</code></td></tr>
+      <tr><td><code>GET /database/orders</code></td><td>Filtra la implementación interna</td><td><code>GET /orders</code></td></tr>
+      <tr><td><code>POST /orders</code> → 200 <code>{"error":true}</code></td><td>Código sin significado y error ambiguo</td><td>422 con <code>{code, message, correlationId}</code></td></tr>
+      <tr><td><code>PUT /orders/O-9831</code> solo con el estado</td><td>PUT reemplaza completo; aquí es parcial</td><td><code>PATCH /orders/O-9831</code> con <code>{"status":"CANCELLED"}</code></td></tr></tbody></table></div>
+    <h4>Endpoints propuestos</h4>
+    <div class="tw"><table><thead><tr><th>Método</th><th>Endpoint</th><th>Descripción</th><th>Éxito</th><th>Errores</th></tr></thead><tbody>
+      <tr><td>POST</td><td>/orders</td><td>Crear pedido</td><td>201</td><td>400, 422 (sin stock), 500</td></tr>
+      <tr><td>GET</td><td>/orders/{orderId}</td><td>Consultar pedido</td><td>200</td><td>404, 500</td></tr>
+      <tr><td>GET</td><td>/orders?customerId=</td><td>Buscar pedidos</td><td>200</td><td>400, 500</td></tr>
+      <tr><td>PATCH</td><td>/orders/{orderId}</td><td>Modificar pedido (por ejemplo cancelar)</td><td>200</td><td>404, 409, 422, 500</td></tr></tbody></table></div>
+  </article>
+
+  <article class="topic">
+    <h3>5.2 Contrato OpenAPI 3 comentado <span class="tag pdf">Del PDF</span> <span class="tag comp">Complemento</span></h3>
+    <p>Ejemplo de la Orders API con paths, parameters, requestBody, responses y components/schemas reutilizables. El resaltado está hecho a mano con CSS.</p>
+    <pre class="code" id="yamlout"></pre>
+    <div class="callout exam"><b class="t">Clave para el examen</b>Fíjese en que los modelos se declaran una sola vez en <code>components/schemas</code> y se reutilizan con <code>$ref</code>; y en que cada operación declara su éxito y al menos dos errores con el mismo schema <code>Error</code>.</div>
+  </article>
+
+  <article class="topic">
+    <h3>5.3 Resolución modelo: caso e-commerce <span class="tag comp">Complemento</span></h3>
+    <p>Un e-commerce debe integrar (1) la app móvil de clientes, (2) el sistema interno de inventario y (3) una plataforma externa de pagos. Elegir REST, GraphQL o gRPC (y webhook donde aplique) para cada uno.</p>
+    <div class="tw"><table><thead><tr><th>Integración</th><th>Elección</th><th>Justificación</th><th>Trade-off</th></tr></thead><tbody>
+      <tr><td>App móvil ↔ backend</td><td>GraphQL (alternativa: REST con un BFF)</td><td>Cada pantalla combina perfil, pedidos y recomendaciones; con GraphQL la app pide solo los campos necesarios en una llamada y ahorra datos y latencia móvil. El esquema evoluciona sin versionar.</td><td>Caché más difícil, control de costo de consultas, curva de aprendizaje. Si el equipo no la domina, REST con un BFF es una opción segura.</td></tr>
+      <tr><td>Backend ↔ Inventario interno</td><td>gRPC</td><td>Comunicación servicio a servicio con alto volumen de llamadas, baja latencia, contrato tipado (.proto) y streaming para sincronizar stock. No se expone a navegadores.</td><td>Menos legible y más herramientas específicas. Si el tráfico es bajo, REST también es aceptable. Para cambios de stock a escala conviene añadir eventos.</td></tr>
+      <tr><td>Backend ↔ Plataforma de pagos externa</td><td>REST, más webhook para el resultado</td><td>Es un tercero: REST es el estándar universal que ofrecen las pasarelas, simple de integrar y documentado con OpenAPI. Para «pago aprobado» la pasarela notifica por webhook, evitando polling.</td><td>Hay que usar claves de idempotencia en los POST de pago, verificar la firma del webhook y tolerar reintentos y duplicados.</td></tr></tbody></table></div>
+    <h4>Pre-sesión de clase <span class="tag pdf">Del PDF</span></h4>
+    <div class="tw"><table><thead><tr><th>Caso</th><th>Elección</th><th>Por qué</th></tr></thead><tbody>
+      <tr><td>A · App móvil: perfil, pedidos y recomendaciones</td><td>GraphQL (o REST)</td><td>Vista de datos específica por pantalla y poco ancho de banda.</td></tr>
+      <tr><td>B · Microservicios: miles de llamadas por segundo</td><td>gRPC</td><td>Desempeño, tipado fuerte y streaming entre servicios.</td></tr>
+      <tr><td>C · Pago aprobado: Stripe debe avisar a nuestro sistema</td><td>Webhook</td><td>Notificación de un evento de un tercero, sin polling.</td></tr></tbody></table></div>
+  </article>
+
+  <article class="topic">
+    <h3>5.4 Resolución modelo: roleplay Matrícula–Finanzas–CRM <span class="tag comp">Complemento</span></h3>
+    <div class="tw"><table><thead><tr><th>Par de sistemas</th><th>Estilo recomendado</th><th>Por qué</th><th>Trade-off</th></tr></thead><tbody>
+      <tr><td>Matrícula → Finanzas (se matriculó: generar cobro)</td><td>Messaging (evento <code>MatriculaConfirmada</code>); si Finanzas es legacy sin broker, un File Transfer batch o adaptador como puente</td><td>Finanzas puede estar en mantenimiento y Matrícula no debe bloquearse (bajo acoplamiento temporal). Los eventos son confiables y reintentables.</td><td>Consistencia eventual; hay que manejar duplicados.</td></tr>
+      <tr><td>Matrícula ↔ Finanzas (¿tiene deuda? bloquea la matrícula)</td><td>Invocación remota síncrona (API REST)</td><td>Se necesita la respuesta ahora para decidir.</td><td>Acoplamiento temporal: define timeout y plan B.</td></tr>
+      <tr><td>Finanzas → Matrícula (pago registrado)</td><td>Messaging (<code>PagoRegistrado</code>)</td><td>Matrícula reacciona cuando le llega; se desacoplan los ritmos.</td><td>Retraso de segundos o minutos.</td></tr>
+      <tr><td>Matrícula/Finanzas → CRM</td><td>Messaging pub/sub; opcionalmente File Transfer nocturno para segmentaciones</td><td>CRM solo consume (lectura) y tolera consistencia eventual; añadir consumidores no afecta a los productores.</td><td>El CRM puede ir unos minutos atrás.</td></tr>
+      <tr><td>Los tres sistemas entre sí</td><td>Evitar Shared Database</td><td>Tienen dueños, ritmos y modelos distintos; un cambio de tabla rompería a los demás.</td><td>Aceptar duplicar datos a cambio de autonomía.</td></tr></tbody></table></div>
+  </article>
+</section>
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+<script type="text/plain" id="yaml-src">
+openapi: 3.0.3                       # versión de la especificación OpenAPI
+info:
+  title: Orders API
+  version: 1.0.0
+  description: |
+    API para la gestión de pedidos.
+    Contrato de integración entre el Sistema de Gestión de Pedidos (proveedor)
+    y la aplicación web de comercio electrónico (consumidor).
+servers:
+  - url: http://localhost:8080
+    description: Servidor local (backend real o mock)
+tags:
+  - name: Orders
+    description: Operaciones sobre pedidos
+
+paths:
+  /orders:
+    post:                              # POST sobre la colección = crear
+      tags: [Orders]
+      summary: Crear un pedido
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              customerId: C-1024
+              items:
+                - productId: P-500
+                  quantity: 2
+      responses:
+        '201':
+          description: Pedido creado
+          headers:
+            Location:
+              description: URI del pedido creado
+              schema:
+                type: string
+              example: /orders/O-9831
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CREATED
+                total: 129.90
+                items:
+                  - productId: P-500
+                    quantity: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':                         # regla de negocio incumplida
+          description: No se puede procesar el pedido (por ejemplo, sin stock)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: PRODUCT_NOT_AVAILABLE
+                message: Product P-500 does not have sufficient stock
+                correlationId: ab23f8b1-91c2-45dc
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:                               # GET sobre la colección = buscar
+      tags: [Orders]
+      summary: Buscar pedidos
+      operationId: listOrders
+      parameters:
+        - name: customerId
+          in: query                    # query parameter: filtra
+          required: false
+          description: Devuelve solo los pedidos de este cliente
+          schema:
+            type: string
+          example: C-1024
+      responses:
+        '200':
+          description: Lista de pedidos (puede estar vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /orders/{orderId}:
+    parameters:
+      - name: orderId
+        in: path                       # path parameter: identifica el recurso
+        required: true
+        description: Identificador del pedido
+        schema:
+          type: string
+        example: O-9831
+    get:
+      tags: [Orders]
+      summary: Consultar un pedido
+      operationId: getOrder
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CREATED
+                total: 129.90
+                items:
+                  - productId: P-500
+                    quantity: 2
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:                             # PATCH = modificación parcial
+      tags: [Orders]
+      summary: Modificar parcialmente un pedido (por ejemplo, cancelarlo)
+      operationId: updateOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderRequest'
+            example:
+              status: CANCELLED
+      responses:
+        '200':
+          description: Pedido actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CANCELLED
+                total: 129.90
+                items:
+                  - productId: P-500
+                    quantity: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El estado actual del pedido no permite el cambio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: ORDER_NOT_MODIFIABLE
+                message: Order O-9831 is already cancelled
+                correlationId: 7d1c0e52-44aa-41b1
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:                            # elementos reutilizables
+  responses:
+    BadRequest:
+      description: Solicitud inválida (datos faltantes o con formato incorrecto)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INVALID_REQUEST
+            message: customerId is required
+            correlationId: 3f2a9c10-0b7e-4d55
+    NotFound:
+      description: El recurso solicitado no existe
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: ORDER_NOT_FOUND
+            message: Order O-0000 was not found
+            correlationId: 9be1a7c4-5521-4f0a
+    InternalError:
+      description: Falla inesperada del servicio
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INTERNAL_ERROR
+            message: Unexpected error. Use the correlationId to report it
+            correlationId: c04d77b2-91ee-4a63
+  schemas:
+    OrderItem:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+          example: P-500
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+    CreateOrderRequest:
+      type: object
+      required: [customerId, items]
+      properties:
+        customerId:
+          type: string
+          example: C-1024
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    UpdateOrderRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [CREATED, PAID, CANCELLED]
+          example: CANCELLED
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          example: O-9831
+        customerId:
+          type: string
+          example: C-1024
+        status:
+          type: string
+          enum: [CREATED, PAID, CANCELLED]
+        total:
+          type: number
+          format: double
+          example: 129.90
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    Error:                             # modelo común de error
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Código estable pensado para máquinas
+          example: PRODUCT_NOT_AVAILABLE
+        message:
+          type: string
+          description: Mensaje pensado para personas
+          example: Product P-500 does not have sufficient stock
+        correlationId:
+          type: string
+          description: Identificador para rastrear la petición entre sistemas
+          example: ab23f8b1-91c2-45dc
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

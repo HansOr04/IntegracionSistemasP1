@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semana 3 · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="semana3">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week w3" id="s3">
+  <span class="badge">Semana 3</span>
+  <h2 class="sec">APIs como estándar de integración</h2>
+  <div class="obj"><b>Objetivos de aprendizaje</b>
+    <ul>
+      <li>Explicar por qué una API es un contrato de integración y no solo una URL.</li>
+      <li>Modelar recursos, URIs y métodos HTTP con criterios REST; razonar con idempotencia y códigos de estado.</li>
+      <li>Formalizar el contrato con OpenAPI y probarlo en Postman (enfoque Contract First).</li>
+      <li>Elegir entre REST, GraphQL, gRPC y webhooks según la interacción.</li>
+    </ul></div>
+  <div class="central">Idea central: una API es la frontera estable entre dos sistemas; el consumidor depende del contrato, no de la implementación interna.</div>
+
+  <article class="topic" id="s3-contrato">
+    <h3>3.1 Una API es una frontera, no solo una URL <span class="tag pdf">Del PDF</span></h3>
+    <p><b>Definición.</b> Una API (Application Programming Interface) es la interfaz mediante la cual un software expone capacidades o información a otro. Analogía de clase: como en un restaurante, el cliente conoce el <b>menú</b> y no la <b>cocina</b>.</p>
+    <div class="dg" data-d="frontera"></div>
+    <p><b>Del archivo a la API.</b> La API sustituye el intercambio diferido por archivos por una interacción inmediata regida por un contrato explícito. Equivalencias de la diapositiva:</p>
+    <div class="tw"><table><thead><tr><th>Integración mediante archivo</th><th>Integración mediante API</th></tr></thead><tbody>
+      <tr><td>Archivo CSV / XML</td><td>Request HTTP</td></tr>
+      <tr><td>Estructura de archivo</td><td>Payload / Schema</td></tr>
+      <tr><td>Carpeta / FTP</td><td>Endpoint</td></tr>
+      <tr><td>Productor del archivo</td><td>API Consumer / Client</td></tr>
+      <tr><td>Consumidor del archivo</td><td>API Provider</td></tr>
+      <tr><td>Ejecución batch</td><td>Interacción bajo demanda</td></tr>
+      <tr><td>Archivo de errores</td><td>HTTP status + error payload</td></tr>
+      <tr><td>Convención documental</td><td>API Contract</td></tr>
+      <tr><td>Esperar siguiente ejecución</td><td>Respuesta inmediata</td></tr></tbody></table></div>
+    <h4>¿Qué promete el contrato? <span class="tag pdf">Del PDF</span></h4>
+    <div class="tw"><table><thead><tr><th>Dimensión</th><th>Qué define</th></tr></thead><tbody>
+      <tr><td>Operaciones y recursos</td><td>Qué se puede hacer y sobre qué</td></tr>
+      <tr><td>Entrada y salida</td><td>Payloads, schemas y headers</td></tr>
+      <tr><td>Semántica</td><td>Métodos, estados y expectativas</td></tr>
+      <tr><td>Errores</td><td>Códigos y modelo de error</td></tr>
+      <tr><td>Seguridad</td><td>Autenticación y autorización</td></tr>
+      <tr><td>Evolución</td><td>Versionamiento y compatibilidad</td></tr></tbody></table></div>
+    <div class="callout exam"><b class="t">Clave para el examen</b>El consumidor depende del contrato, no de la implementación interna. Un buen contrato evita acuerdos informales y acoplamiento accidental. Criterio fundamental del taller: ¿qué necesita conocer el consumidor y qué puede ignorar del proveedor?</div>
+  </article>
+
+  <article class="topic" id="s3-evol">
+    <h3>3.2 Evolución: SOAP → REST → GraphQL y gRPC (más webhooks) <span class="tag pdf">Del PDF</span> <span class="tag comp">Complemento</span></h3>
+    <ul>
+      <li><b>SOAP</b> (Simple Object Access Protocol, ~1998): mensajes XML en un envelope, contrato WSDL, estándares WS-*. Robusto, pero verboso.</li>
+      <li><b>REST</b> (Representational State Transfer, tesis de Fielding, 2000): recursos sobre HTTP, representaciones JSON. Se populariza hacia 2010 por su simplicidad.</li>
+      <li><b>GraphQL</b> (Facebook, publicado en 2015): el cliente especifica exactamente los campos que necesita en un único endpoint.</li>
+      <li><b>gRPC</b> (Google, 2015): RPC moderno con Protocol Buffers sobre HTTP/2, con streaming.</li>
+      <li><b>Webhook</b>: el proveedor llama a una URL del consumidor cuando ocurre un evento. <span class="tag pdf">Del PDF</span></li>
+    </ul>
+    <h4>Cuatro mecanismos, cuatro tipos de interacción <span class="tag pdf">Del PDF</span></h4>
+    <div class="tw"><table><thead><tr><th></th><th>Ideal para</th><th>Fortaleza</th><th>Trade-off</th></tr></thead><tbody>
+      <tr><td>REST</td><td>APIs públicas y ecosistemas heterogéneos</td><td>Interoperabilidad y tooling web</td><td>Puede sobre o subobtener datos</td></tr>
+      <tr><td>GraphQL</td><td>Clientes con vistas de datos diferentes</td><td>El cliente pide exactamente lo necesario</td><td>Gobernanza, caching y costo de consultas</td></tr>
+      <tr><td>gRPC</td><td>Comunicación intensa entre servicios</td><td>Contrato tipado, streaming y eficiencia</td><td>Menos natural para navegador directo</td></tr>
+      <tr><td>Webhook</td><td>Notificar a un tercero cuando ocurre un evento</td><td>Evita polling constante</td><td>Seguridad, retries, duplicados e idempotencia</td></tr></tbody></table></div>
+    <p>No son reemplazos universales; pueden coexistir en una misma solución. Hay que elegir por <b>interacción</b>, no por moda.</p>
+    <div class="callout err"><b class="t">Error común</b>Creer que GraphQL o gRPC «reemplazan» a REST. Cada uno resuelve una interacción distinta. Y un webhook no es una API que se consulta: es una notificación que el proveedor inicia.</div>
+  </article>
+
+  <article class="topic" id="s3-rest">
+    <h3>3.3 Principios REST y diseño de recursos <span class="tag pdf">Del PDF</span> <span class="tag comp">Complemento</span></h3>
+    <p><b>Idea central.</b> REST no es solo «usar GET/POST». El cambio mental es modelar <b>recursos y representaciones</b>: la URI identifica el recurso y el método HTTP expresa la intención. <span class="tag pdf">Del PDF</span></p>
+    <div class="two"><div class="bad"><h4>Evitar: acciones en la URL</h4><ul><li>/createOrder</li><li>/getOrder</li><li>/updateOrder</li><li>/executeSPCreateOrder</li><li>/database/orders</li></ul></div>
+    <div class="good"><h4>Preferir: recursos</h4><ul><li>POST /orders</li><li>GET /orders/{orderId}</li><li>PATCH /orders/{orderId}</li><li>GET /orders?customerId=C-1024</li></ul></div></div>
+    <p><b>Restricciones de REST (Fielding).</b> Cliente-servidor, sin estado (stateless), caché (cacheable), interfaz uniforme (uniform interface), sistema en capas (layered) y código bajo demanda (opcional). La interfaz uniforme incluye identificación de recursos, manipulación mediante representaciones, mensajes autodescriptivos e hipermedia (HATEOAS).</p>
+    <p><b>Reglas prácticas de URIs.</b> Sustantivos en plural (/orders), jerarquía solo cuando expresa pertenencia (/customers/{id}/orders), minúsculas y guiones, sin verbos ni extensiones, sin exceso de anidación (como regla práctica, no más de colección/elemento/colección).</p>
+    <p><b>Pregunta de clase.</b> <span class="tag pdf">Del PDF</span> ¿<code>GET /orders?customerId=123</code> o <code>GET /customers/123/orders</code>? Ambas pueden ser válidas: la primera trata los pedidos como una colección filtrable (más flexible para filtros combinados); la segunda expresa la pertenencia y facilita la navegación. Se justifica por semántica, navegación y evolución.</p>
+    <p><b>Modelo de madurez de Richardson.</b> Nivel 0: un endpoint y un verbo (pantano POX). Nivel 1: recursos. Nivel 2: verbos HTTP y códigos de estado correctos. Nivel 3: hipermedia (HATEOAS). La mayoría de las APIs «REST» reales se quedan en el nivel 2.</p>
+  </article>
+
+  <article class="topic" id="s3-http">
+    <h3>3.4 Métodos HTTP, seguridad e idempotencia <span class="tag pdf">Del PDF</span></h3>
+    <p>No se memorizan verbos: se elige una semántica observable para el consumidor. Regla mental: <b>recurso en la URI + intención en el método</b>.</p>
+    <div class="tw"><table><thead><tr><th>Intención</th><th>Método</th><th>Ejemplo</th></tr></thead><tbody>
+      <tr><td>Listar</td><td>GET</td><td>/orders</td></tr>
+      <tr><td>Consultar</td><td>GET</td><td>/orders/{id}</td></tr>
+      <tr><td>Crear</td><td>POST</td><td>/orders</td></tr>
+      <tr><td>Reemplazar / modificar</td><td>PUT / PATCH</td><td>/orders/{id}</td></tr>
+      <tr><td>Eliminar</td><td>DELETE</td><td>/orders/{id}</td></tr></tbody></table></div>
+    <h4>Reintentos: ¿qué pasa si repito la solicitud?</h4>
+    <p><b>Safe (seguro):</b> no debería cambiar el estado del servidor. <b>Idempotente (idempotent):</b> repetirla produce el mismo estado final. GET es seguro e idempotente. PUT y DELETE son idempotentes. POST normalmente no lo es. Importa porque <b>la red puede fallar después de enviar una operación</b>: el cliente no sabe si el servidor la procesó y reintenta.</p>
+    <div class="callout idea"><b class="t">Ejemplo de idempotencia</b>Si <code>PUT /orders/O-1</code> con estado «CANCELADO» se repite diez veces, el pedido sigue cancelado. Si <code>POST /orders</code> se repite diez veces, podría crear diez pedidos. Solución habitual: una clave de idempotencia (Idempotency-Key) en el header para que el servidor reconozca el reintento.</div>
+    <p><b>PUT frente a PATCH.</b> PUT reemplaza el recurso completo con la representación enviada. PATCH modifica parcialmente y no está garantizado como idempotente (depende de cómo se defina).</p>
+    <div class="callout err"><b class="t">Error común</b>Usar POST para todo, o GET para operaciones que cambian estado. Los intermediarios (cachés, proxies, rastreadores) asumen que GET no tiene efectos secundarios.</div>
+  </article>
+
+  <article class="topic" id="s3-status">
+    <h3>3.5 Request, response, códigos de estado y errores <span class="tag pdf">Del PDF</span></h3>
+    <p>Request y response son un contrato observable. Ejemplo (del PDF):</p>
+    <pre class="plain">POST /orders
+Content-Type: application/json
+
+{ "customerId": "C-1024", "items": [ { "productId": "P-500", "quantity": 2 } ] }
+
+HTTP/1.1 201 Created
+Location: /orders/O-9831
+
+{ "id": "O-9831", "customerId": "C-1024", "status": "CREATED", "total": 129.90 }</pre>
+    <ul>
+      <li><b>Método + endpoint:</b> operación y recurso.</li>
+      <li><b>Headers:</b> metadatos, formato y control.</li>
+      <li><b>Parámetros y body:</b> datos de entrada.</li>
+      <li><b>Status code:</b> resultado semántico (<b>201</b> expresa más que un 200 genérico).</li>
+      <li><b>Response body:</b> representación resultante.</li>
+    </ul>
+    <h4>Éxitos y errores también se diseñan</h4>
+    <pre class="plain">{ "code": "PRODUCT_NOT_AVAILABLE",
+  "message": "Product P-500 does not have sufficient stock",
+  "correlationId": "ab23f8b1-91c2-45dc" }</pre>
+    <p>El modelo de error debe tener como mínimo <code>code</code> y <code>message</code>; el <code>correlationId</code> es una buena práctica que permite rastrear la petición entre sistemas. Conviene separar el error técnico, el error de negocio y el mensaje para quien integra. <span class="tag comp">Complemento</span> El estándar RFC 9457 (Problem Details, <code>application/problem+json</code>) formaliza este tipo de modelo.</p>
+    <p><b>Tipos de respuesta.</b> Éxito: 200 OK, 201 Created, 204 No Content. Error del consumidor: 400, 404, 409, 422. Error del proveedor: 500. Los códigos no se usan arbitrariamente: el status debe representar el resultado de la operación.</p>
+    <div class="callout err"><b class="t">Errores que evitar (taller)</b>Responder siempre 200 OK sin importar el resultado; devolver errores ambiguos como <code>{"error": true}</code>; duplicar schemas en cada operación; escribir primero el código para luego «inventar» la documentación.</div>
+    <p>La tabla completa de códigos está en <a href="tablas.html">Tablas comparativas</a>.</p>
+  </article>
+
+  <article class="topic" id="s3-listas">
+    <h3>3.6 Parámetros, paginación, filtrado y versionado <span class="tag pdf">Del PDF</span> <span class="tag comp">Complemento</span></h3>
+    <p><b>Path parameter:</b> identifica un recurso específico o parte esencial de la ruta (<code>GET /orders/{orderId}</code>). <b>Query parameter:</b> filtra, ordena, busca o modifica una consulta (<code>GET /orders?customerId=C-1024</code>). <span class="tag pdf">Del PDF</span></p>
+    <ul>
+      <li><b>Paginación (pagination)</b> <span class="tag comp">Complemento</span>: por desplazamiento (<code>?limit=20&amp;offset=40</code>) o por cursor (<code>?cursor=abc123</code>), más estable cuando los datos cambian. Se suelen devolver enlaces y el total.</li>
+      <li><b>Filtrado y orden:</b> <code>?status=CREATED&amp;sort=-createdAt</code>.</li>
+      <li><b>Versionado (versioning):</b> en la URI (<code>/v1/orders</code>), en un header (<code>Accept: application/vnd.acme.v1+json</code>) o en un query parameter. Sirve para cambios incompatibles.</li>
+      <li><b>HATEOAS (Hypermedia As The Engine Of Application State):</b> la respuesta incluye enlaces a las acciones posibles (<code>_links: { self, cancel, payment }</code>), de modo que el cliente navega sin hardcodear URIs.</li>
+    </ul>
+    <h4>Compatibilidad: un contrato debe poder evolucionar <span class="tag pdf">Del PDF</span></h4>
+    <div class="two"><div class="good"><b>Compatible</b><br>Agregar un campo opcional (<code>"priority": "NORMAL"</code>) suele preservar a los consumidores existentes.</div>
+    <div class="bad"><b>Incompatible</b><br>Renombrar o eliminar un campo (<code>customerId</code> → <code>clientId</code>) rompe integraciones.</div></div>
+    <p>Versionar ayuda, pero no sustituye diseñar y comunicar la compatibilidad. Un consumidor debe tolerar campos nuevos que no conoce.</p>
+  </article>
+
+  <article class="topic" id="s3-openapi">
+    <h3>3.7 OpenAPI: el contrato hecho explícito <span class="tag pdf">Del PDF</span> <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> OpenAPI es un estándar para describir APIs HTTP en YAML o JSON. Describe la interfaz; no implementa la lógica de negocio. (Antes se llamaba Swagger; hoy lo mantiene la OpenAPI Initiative y Swagger UI, Editor y Codegen son herramientas del ecosistema.)</p>
+    <p><b>Estructura.</b></p>
+    <ul>
+      <li><code>openapi</code>: versión de la especificación (por ejemplo 3.0.3).</li>
+      <li><code>info</code>: título, versión y descripción.</li>
+      <li><code>servers</code>: URLs base.</li>
+      <li><code>paths</code>: endpoints y operaciones (parameters, requestBody, responses).</li>
+      <li><code>components</code>: elementos reutilizables (<code>schemas</code>, parameters, responses, securitySchemes).</li>
+    </ul>
+    <p><b>Para qué sirve.</b> Documentación, mocks, SDKs generados, pruebas e implementación guiada por el contrato. Los modelos principales se declaran en <code>components/schemas</code> y se reutilizan con <code>$ref</code>; la especificación debe incluir ejemplos de request y response.</p>
+    <p>Ver un contrato completo y comentado en <a href="practica.html">Práctica de API</a>.</p>
+  </article>
+
+  <article class="topic" id="s3-taller">
+    <h3>3.8 Contract First y el taller de la Orders API <span class="tag pdf">Del PDF</span></h3>
+    <p><b>Enfoque Contract First:</b> necesidad de negocio → contrato → validación → implementación. No se escribe primero el código para luego «inventar» la documentación.</p>
+    <div class="steps"><span>1 Comprender el problema</span><i>→</i><span>2 Identificar sistemas</span><i>→</i><span>3 Identificar recursos</span><i>→</i><span>4 Diseñar operaciones</span><i>→</i><span>5 Request/response</span><i>→</i><span>6 Errores</span><i>→</i><span>7 Formalizar en OpenAPI</span><i>→</i><span>8 Validar</span><i>→</i><span>9 Importar en Postman</span></div>
+    <p><b>Del problema al contrato (resumen de la clase).</b> Problema → interacción → mecanismo → contrato → especificación → implementación.</p>
+    <h4>Qué pide el taller</h4>
+    <ul>
+      <li>Dominio a elegir: pedidos, matrículas, citas médicas, pagos o inventario.</li>
+      <li>Contexto: sistema proveedor, sistema consumidor, propósito (máximo cinco líneas) y recursos principales.</li>
+      <li><b>Alcance mínimo:</b> 3 endpoints, 2 métodos HTTP diferentes, 1 path parameter, 1 query parameter, 1 request body, schemas reutilizables, respuestas exitosas, al menos 2 escenarios de error, modelo común de error, ejemplos de request y response, OpenAPI válido, colección Postman con 3 requests y README con decisiones de diseño.</li>
+      <li><b>Fuera de alcance:</b> OAuth2, JWT, API Gateway, rate limiting, Service Mesh, observabilidad distribuida, Kubernetes, microservicios completos, base de datos y backend funcional.</li>
+      <li><b>Entregables:</b> carpeta con <code>openapi.yaml</code> (o json), <code>README.md</code> y <code>postman/API.postman_collection.json</code>.</li>
+      <li><b>README:</b> nombre de la API, problema de integración, sistemas, recursos, tabla de endpoints, al menos tres decisiones de diseño justificadas y respuesta a la pregunta de reflexión.</li>
+    </ul>
+    <div class="tw"><table><thead><tr><th>Criterio</th><th>Peso</th><th>Qué se evalúa</th></tr></thead><tbody>
+      <tr><td>A. Modelado REST</td><td>25 %</td><td>Recursos, endpoints, métodos HTTP, path y query parameters</td></tr>
+      <tr><td>B. Contrato de datos</td><td>20 %</td><td>Request/response, modelos, schemas, consistencia de nombres y tipos</td></tr>
+      <tr><td>C. Respuestas y errores</td><td>15 %</td><td>Códigos HTTP, errores previstos, modelo común de error</td></tr>
+      <tr><td>D. Especificación OpenAPI</td><td>25 %</td><td>Estructura, validez, claridad, completitud, reutilización, ejemplos</td></tr>
+      <tr><td>E. Postman y documentación</td><td>15 %</td><td>Importación, tres requests, README y decisiones de diseño</td></tr></tbody></table></div>
+    <h4>Postman sin backend</h4>
+    <p>Se importa el OpenAPI, se genera la colección, se configura la variable de base URL y se revisan al menos tres requests (<code>POST /orders</code>, <code>GET /orders/{orderId}</code>, <code>GET /orders?customerId=C-1024</code>). Sin backend, Postman demuestra métodos, URLs, parámetros, headers, bodies y los ejemplos de respuesta definidos en el contrato. Se evalúa la calidad del diseño, no la implementación. En la clase se añade una revisión cruzada de contratos de 3 minutos: el grupo revisor señala una fortaleza y una mejora concreta.</p>
+    <div class="callout exam"><b class="t">Pregunta de reflexión del taller</b>¿Qué ventaja obtiene el consumidor al tener un contrato OpenAPI antes de que el proveedor termine la implementación? <b>Respuesta modelo:</b> puede desarrollar y probar su integración en paralelo usando mocks y la colección de Postman, detectar ambigüedades del diseño temprano (cuando corregir es barato), generar clientes y validar su propio código contra el contrato, y reducir la dependencia del cronograma del proveedor.</div>
+  </article>
+
+  <article class="topic" id="s3-gql">
+    <h3>3.9 GraphQL y gRPC en detalle <span class="tag comp">Complemento</span></h3>
+    <div class="dg" data-d="rest"></div>
+    <p><b>REST:</b> varios endpoints por recurso; la respuesta es lo que el servidor define. Riesgo: <i>over-fetching</i> (recibir de más) y <i>under-fetching</i> (necesitar varias llamadas).</p>
+    <div class="dg" data-d="gql"></div>
+    <p><b>GraphQL:</b> un único endpoint (<code>POST /graphql</code>); el cliente describe el árbol de datos que necesita; el esquema está tipado (SDL) y las consultas se resuelven con resolvers. Evita over/under-fetching. Costos: caché más difícil, riesgo de consultas muy costosas (se limita profundidad o costo), problema N+1 en resolvers.</p>
+    <div class="dg" data-d="grpc"></div>
+    <p><b>gRPC:</b> contrato en un archivo <code>.proto</code>, serialización binaria con Protocol Buffers, HTTP/2 (multiplexación) y streaming (unario, servidor, cliente, bidireccional). Muy eficiente entre servicios internos; limitado directamente en navegadores (se usa gRPC-Web).</p>
+    <p><b>Webhook.</b> <span class="tag pdf">Del PDF</span> El proveedor llama al consumidor cuando ocurre un evento (por ejemplo, una pasarela de pagos avisa «pago aprobado»). Evita polling, pero exige verificar la firma, gestionar reintentos y ser idempotente ante duplicados.</p>
+  </article>
+</section>
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

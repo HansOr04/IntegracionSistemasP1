@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cheat sheet · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="cheat-sheet">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block" id="cheat">
+  <h2 class="sec" style="--accent:var(--w2)">Cheat sheet (una página)</h2>
+  <div class="bar noprint"><button class="btn primary" onclick="window.print()">🖨 Imprimir cheat sheet</button></div>
+  <div class="cheat">
+    <div><h4>Evolución</h4><ul><li>Batch → EAI → SOA/ESB → APIs/REST → Microservicios → EDA</li><li>Cada paso baja un acoplamiento y trae un nuevo costo</li><li>Conviven: no se reemplazan de golpe</li></ul></div>
+    <div><h4>Acoplamiento y cohesión</h4><ul><li>Meta: bajo acoplamiento, alta cohesión</li><li>Tipos: plataforma, temporal, ubicación, datos, semántico</li></ul></div>
+    <div><h4>Batch / EAI / SOA / ESB</h4><ul><li>Batch: bloque programado, latencia alta</li><li>EAI: hub-and-spoke; hub = punto único de fallo</li><li>SOA: servicios con contrato (WSDL)</li><li>ESB: enruta, transforma, media protocolos</li></ul></div>
+    <div><h4>Microservicios y EDA</h4><ul><li>MS: autónomos, BD propia, despliegue independiente</li><li>EDA: evento = hecho pasado; productor no conoce consumidores</li><li>Costo: consistencia eventual, idempotencia</li></ul></div>
+    <div><h4>Los 4 estilos EIP</h4><ul><li>File Transfer: simple, latencia alta, legacy</li><li>Shared DB: consistente, acoplado al esquema</li><li>RPC: síncrono, acoplamiento temporal</li><li>Messaging: asíncrono, confiable, más complejo</li></ul></div>
+    <div><h4>Criterios de decisión</h4><ul><li>Acoplamiento, latencia, formato, confiabilidad, escalabilidad, complejidad, consistencia</li><li>Justifique el trade-off</li></ul></div>
+    <div><h4>REST en 6 reglas</h4><ul><li>Recursos = sustantivos plurales</li><li>El método da la intención</li><li>Stateless</li><li>Códigos de estado con sentido</li><li>Errores con modelo común</li><li>Contrato documentado (OpenAPI)</li></ul></div>
+    <div><h4>Métodos HTTP</h4><ul><li>GET: seguro, idempotente</li><li>POST: crea, no idempotente (201)</li><li>PUT: reemplaza, idempotente</li><li>PATCH: parcial</li><li>DELETE: elimina, idempotente (204)</li></ul></div>
+    <div><h4>Códigos clave</h4><ul><li>200, 201, 204</li><li>400, 401, 403, 404, 409, 422, 429</li><li>500, 502, 503, 504</li></ul></div>
+    <div><h4>REST / GraphQL / gRPC / Webhook</h4><ul><li>REST: APIs públicas e interoperabilidad</li><li>GraphQL: vistas variables, un endpoint</li><li>gRPC: servicio a servicio, Protobuf, HTTP/2</li><li>Webhook: notificar eventos a un tercero</li></ul></div>
+    <div><h4>OpenAPI</h4><ul><li>openapi, info, servers, paths, components/schemas</li><li>$ref para reutilizar</li><li>Ejemplos de request y response</li></ul></div>
+    <div><h4>Contract First y taller</h4><ul><li>Necesidad → contrato → validación → implementación</li><li>Mín.: 3 endpoints, 2 métodos, path y query, body, 2 errores, modelo de error, Postman con 3 requests, README</li><li>Pesos: 25/20/15/25/15</li></ul></div>
+    <div><h4>Error model</h4><ul><li>Mínimo: code, message</li><li>Bueno: correlationId</li><li>Nunca siempre 200 ni {"error":true}</li></ul></div>
+    <div><h4>Compatibilidad</h4><ul><li>Compatible: agregar campo opcional</li><li>Incompatible: renombrar o quitar campo</li><li>Versionar no sustituye diseñar</li></ul></div>
+    <div><h4>Caso e-commerce</h4><ul><li>Móvil: GraphQL (o REST + BFF)</li><li>Inventario: gRPC</li><li>Pagos externos: REST + webhook</li></ul></div>
+    <div><h4>Frase para recordar</h4><ul><li>Problema → interacción → mecanismo → contrato → especificación → implementación</li></ul></div>
+  </div>
+</section>
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

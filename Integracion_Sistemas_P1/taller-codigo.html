@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taller: cómo hacer el código · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="taller-codigo">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week w3" id="taller-codigo">
+  <span class="badge">Taller · Código</span>
+  <h2 class="sec">🛠️ Taller: cómo construir el código paso a paso</h2>
+  <p>El taller se resuelve con <b>3 archivos de texto</b>. No necesitas programar un backend. Aquí tienes el camino completo y los archivos reales (basados en la Orders API del PDF) para copiar, descargar y adaptar a tu dominio.</p>
+  <div class="central">🧭 Orden recomendado: carpeta → openapi.yaml → validar → Postman → README → (opcional) mock o backend</div>
+
+  <h3 class="tsec"><span class="num">1</span> Qué vas a construir</h3>
+  <div class="two">
+    <div><pre class="plain tree">Semana3_API_REST/
+├── openapi.yaml            ← el contrato (lo más importante)
+├── README.md               ← explica y justifica tu diseño
+└── postman/
+    └── API.postman_collection.json</pre></div>
+    <div><ul style="padding-left:18px;margin:0"><li>📐 <b>openapi.yaml</b>: describe endpoints, datos y errores.</li><li>📮 <b>Colección Postman</b>: prueba el contrato (≥ 3 requests).</li><li>📝 <b>README.md</b>: problema, sistemas, recursos, decisiones y reflexión.</li><li>⚙️ <b>server.js</b> <span class="tag comp">Complemento</span>: backend opcional para ver respuestas reales.</li></ul></div>
+  </div>
+
+  <h3 class="tsec"><span class="num">2</span> Herramientas que necesitas</h3>
+  <div class="tw"><table><thead><tr><th>Herramienta</th><th>Para qué</th><th>¿Obligatoria?</th></tr></thead><tbody>
+    <tr><td>Editor de texto (por ejemplo VS Code)</td><td>Escribir el YAML y el README</td><td>Sí</td></tr>
+    <tr><td>Postman</td><td>Importar el contrato y probar requests</td><td>Sí (lo pide el taller)</td></tr>
+    <tr><td>Swagger Editor (editor.swagger.io) o Redocly CLI</td><td>Validar el OpenAPI y ver errores <span class="tag comp">Complemento</span></td><td>Muy recomendado</td></tr>
+    <tr><td>Node.js</td><td>Solo para el mock (Prism) o el backend de ejemplo <span class="tag comp">Complemento</span></td><td>Opcional</td></tr></tbody></table></div>
+
+  <h3 class="tsec"><span class="num">3</span> Paso 0 · Crear la carpeta</h3>
+  <div class="two">
+    <div><h4>macOS / Linux / Git Bash</h4><div class="cmd">mkdir -p Semana3_API_REST/postman
+cd Semana3_API_REST
+touch openapi.yaml README.md</div></div>
+    <div><h4>Windows (PowerShell)</h4><div class="cmd">mkdir Semana3_API_REST\postman
+cd Semana3_API_REST
+New-Item openapi.yaml, README.md</div></div>
+  </div>
+
+  <h3 class="tsec"><span class="num">4</span> Paso 1 · Escribir el openapi.yaml en 6 bloques</h3>
+  <p>No lo escribas de arriba abajo de un tirón. Ve por bloques y valida cada tanto. Abre cada bloque:</p>
+  <details class="case" open><summary>🧱 Bloque 1 · Cabecera: <code>openapi</code>, <code>info</code>, <code>servers</code></summary><div class="ans">
+    <p>Dice qué es tu API, su versión y dónde vive. Son datos obligatorios del taller.</p>
+<pre class="code" data-yaml>
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 1.0.0
+  description: API para la gestión de pedidos
+servers:
+  - url: http://localhost:8080
+paths:
+components:
+  schemas:
+</pre></div></details>
+  <details class="case"><summary>🧬 Bloque 2 · Modelos reutilizables en <code>components/schemas</code></summary><div class="ans">
+    <p>Declara los datos <b>una sola vez</b>: lo que envías (<code>CreateOrderRequest</code>), lo que recibes (<code>Order</code>) y el error (<code>Error</code>). Después los reutilizas con <code>$ref</code>.</p>
+<pre class="code" data-yaml>
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required: [customerId, items]
+      properties:
+        customerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+</pre></div></details>
+  <details class="case"><summary>➕ Bloque 3 · <code>POST /orders</code> (request body + éxito + 2 errores)</summary><div class="ans">
+    <p>Una operación completa: qué envías (<code>requestBody</code>), qué pasa si sale bien (<code>201</code>) y los errores (<code>400</code>, <code>422</code>).</p>
+<pre class="code" data-yaml>
+paths:
+  /orders:
+    post:
+      summary: Crear un pedido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              customerId: C-1024
+              items:
+                - productId: P-500
+                  quantity: 2
+      responses:
+        '201':
+          description: Pedido creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '422':
+          description: Regla de negocio incumplida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+</pre></div></details>
+  <details class="case"><summary>🔍 Bloque 4 · <code>GET /orders/{orderId}</code> (path parameter)</summary><div class="ans">
+    <p>El nombre entre llaves de la ruta debe coincidir con el <code>name</code> del parámetro, y <code>in: path</code> siempre es <code>required: true</code>.</p>
+<pre class="code" data-yaml>
+  /orders/{orderId}:
+    get:
+      summary: Consultar un pedido
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Pedido inexistente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+</pre></div></details>
+  <details class="case"><summary>🔎 Bloque 5 · <code>GET /orders?customerId=</code> (query parameter)</summary><div class="ans">
+    <p>El filtro va en <code>in: query</code> y normalmente es opcional. Va dentro de <code>/orders</code>, junto a <code>post</code>.</p>
+<pre class="code" data-yaml>
+    get:
+      summary: Buscar pedidos
+      parameters:
+        - name: customerId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de pedidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+</pre></div></details>
+  <details class="case"><summary>♻️ Bloque 6 · <code>PATCH</code> y respuestas reutilizables</summary><div class="ans">
+    <p>Si varias operaciones devuelven el mismo error, defínelo una vez en <code>components/responses</code> y reutilízalo. Así no duplicas nada.</p>
+<pre class="code" data-yaml>
+components:
+  responses:
+    NotFound:
+      description: El recurso solicitado no existe
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: ORDER_NOT_FOUND
+            message: Order O-0000 was not found
+            correlationId: 9be1a7c4-5521-4f0a
+# luego, en cualquier operación:
+#   '404':
+#     $ref: '#/components/responses/NotFound'
+</pre></div></details>
+
+  <h3 class="tsec"><span class="num">5</span> Los archivos completos (copiar o descargar)</h3>
+  <p>Estos son los archivos reales del entregable, ya validados. Cambia nombres y recursos para tu dominio (ver el bloque 10).</p>
+  <div id="fviewer"></div>
+
+  <h3 class="tsec"><span class="num">6</span> ¿Dónde cumplo cada requisito del taller?</h3>
+  <div class="tw"><table><thead><tr><th>Requisito</th><th>Dónde está en el openapi.yaml</th></tr></thead><tbody>
+    <tr><td>Mínimo 3 endpoints</td><td><code>paths</code>: <code>/orders</code> y <code>/orders/{orderId}</code> con 4 operaciones</td></tr>
+    <tr><td>Mínimo 2 métodos HTTP</td><td><code>post</code>, <code>get</code> y <code>patch</code></td></tr>
+    <tr><td>Mínimo 1 path parameter</td><td><code>parameters</code> con <code>in: path</code> (<code>orderId</code>)</td></tr>
+    <tr><td>Mínimo 1 query parameter</td><td><code>parameters</code> con <code>in: query</code> (<code>customerId</code>)</td></tr>
+    <tr><td>Mínimo 1 request body</td><td><code>requestBody</code> en POST y PATCH</td></tr>
+    <tr><td>Modelos reutilizables</td><td><code>components/schemas</code> + <code>$ref</code></td></tr>
+    <tr><td>Respuestas exitosas</td><td><code>'200'</code> y <code>'201'</code></td></tr>
+    <tr><td>Mínimo 2 escenarios de error</td><td><code>'400'</code>, <code>'404'</code>, <code>'409'</code>, <code>'422'</code>, <code>'500'</code></td></tr>
+    <tr><td>Modelo común de error</td><td>Schema <code>Error</code> (<code>code</code>, <code>message</code>, <code>correlationId</code>)</td></tr>
+    <tr><td>Ejemplos de request y response</td><td>Claves <code>example</code> dentro de <code>content</code></td></tr></tbody></table></div>
+
+  <h3 class="tsec"><span class="num">7</span> Paso 2 · Validar el contrato</h3>
+  <div class="tw"><table><thead><tr><th>Opción</th><th>Cómo</th></tr></thead><tbody>
+    <tr><td>Swagger Editor <span class="tag comp">Complemento</span></td><td>Abre editor.swagger.io, pega tu YAML y mira los errores a la derecha.</td></tr>
+    <tr><td>Redocly CLI <span class="tag comp">Complemento</span></td><td><div class="cmd">npx @redocly/cli lint openapi.yaml</div></td></tr>
+    <tr><td>VS Code</td><td>Instala una extensión de OpenAPI para ver errores mientras escribes.</td></tr></tbody></table></div>
+  <h4>Errores típicos del YAML</h4>
+  <div class="xo">
+    <div class="x">❌ Sangría con tabulaciones</div><div class="v">✅ Usa 2 espacios por nivel (nunca tab)</div>
+    <div class="x">❌ <code>201:</code> sin comillas</div><div class="v">✅ <code>'201':</code> (los códigos son texto)</div>
+    <div class="x">❌ <code>$ref</code> a un schema que no existe</div><div class="v">✅ Revisa <code>#/components/schemas/Nombre</code> letra por letra</div>
+    <div class="x">❌ <code>{orderId}</code> en la ruta sin declarar el parámetro</div><div class="v">✅ Declara <code>in: path</code> y <code>required: true</code></div>
+    <div class="x">❌ <code>example</code> que no cumple el schema</div><div class="v">✅ Mismos nombres y tipos que el schema</div>
+  </div>
+
+  <h3 class="tsec"><span class="num">8</span> Paso 3 · Probar el contrato sin escribir backend</h3>
+  <div class="two">
+    <div><h4>Opción A · Mock con Prism <span class="tag comp">Complemento</span></h4><p>Levanta un servidor falso que responde con los <code>example</code> de tu contrato.</p><div class="cmd">npx @stoplight/prism-cli mock openapi.yaml</div><p>Por defecto queda en <code>http://127.0.0.1:4010</code>. En Postman cambia <code>baseUrl</code> a esa dirección.</p></div>
+    <div><h4>Opción B · Backend de ejemplo <span class="tag comp">Complemento</span></h4><p>Un servidor Express de ~100 líneas que cumple el contrato (carpeta <code>extras_opcionales/server</code>).</p><div class="cmd">cd extras_opcionales/server
+npm install
+node server.js</div><p>Queda en <code>http://localhost:8080</code>, igual que tu <code>servers</code>.</p></div>
+  </div>
+  <p>Con el backend de ejemplo puedes comprobar cada código de respuesta:</p>
+  <div class="tw"><table><thead><tr><th>Prueba</th><th>Esperado</th></tr></thead><tbody>
+    <tr><td>POST /orders con datos válidos</td><td><span class="sbadge s2xx">201</span></td></tr>
+    <tr><td>POST /orders con quantity 9999</td><td><span class="sbadge s4xx">422</span> PRODUCT_NOT_AVAILABLE</td></tr>
+    <tr><td>POST /orders sin customerId</td><td><span class="sbadge s4xx">400</span> INVALID_REQUEST</td></tr>
+    <tr><td>GET /orders/O-9831</td><td><span class="sbadge s2xx">200</span></td></tr>
+    <tr><td>GET /orders/O-0000</td><td><span class="sbadge s4xx">404</span> ORDER_NOT_FOUND</td></tr>
+    <tr><td>PATCH dos veces a CANCELLED</td><td><span class="sbadge s2xx">200</span> y luego <span class="sbadge s4xx">409</span></td></tr></tbody></table></div>
+  <div class="cmd">curl -i -X POST http://localhost:8080/orders -H 'Content-Type: application/json' \
+  -d '{"customerId":"C-1024","items":[{"productId":"P-500","quantity":2}]}'</div>
+  <details class="case"><summary>🔎 ¿Qué hace cada parte del server.js?</summary><div class="ans"><ul>
+    <li><b>Rutas</b>: una función por operación del contrato (POST, GET, GET por id, PATCH).</li>
+    <li><b>Validación</b>: revisa tipos y campos requeridos y responde 400 con el modelo de error.</li>
+    <li><b>Reglas de negocio</b>: sin stock responde 422; pedido cancelado responde 409.</li>
+    <li><b>Errores</b>: siempre <code>{code, message, correlationId}</code>; el detalle interno nunca sale al cliente.</li>
+    <li><b>Seguridad básica</b>: límite de tamaño del body, rate limiting simple y token Bearer opcional (ver <a href="seguridad.html">Seguridad de APIs</a>).</li></ul></div></details>
+
+  <h3 class="tsec"><span class="num">9</span> Paso 4 · Postman, clic por clic</h3>
+  <div class="steps"><span>1️⃣ Import</span><i>→</i><span>2️⃣ Elegir openapi.yaml</span><i>→</i><span>3️⃣ Importar como colección</span><i>→</i><span>4️⃣ Variable baseUrl</span><i>→</i><span>5️⃣ Send</span><i>→</i><span>6️⃣ Exportar a postman/</span></div>
+  <ol>
+    <li>En Postman pulsa <b>Import</b> y arrastra tu <code>openapi.yaml</code>.</li>
+    <li>Elige generar una <b>colección</b> (la pantalla puede variar según la versión de Postman).</li>
+    <li>Comprueba que aparecen las 4 operaciones con sus métodos, parámetros y body.</li>
+    <li>Crea o revisa la variable <code>baseUrl</code> (por ejemplo <code>http://localhost:8080</code>).</li>
+    <li>Prepara al menos 3 requests: <code>POST /orders</code>, <code>GET /orders/{orderId}</code> y <code>GET /orders?customerId=C-1024</code>.</li>
+    <li>Exporta la colección (formato v2.1) y guárdala en <code>postman/API.postman_collection.json</code>.</li>
+  </ol>
+  <p>Opcional <span class="tag comp">Complemento</span>: en la pestaña <b>Tests</b> de cada request puedes automatizar comprobaciones:</p>
+<pre class="code" data-js>
+pm.test("Status 201 Created", () => pm.response.to.have.status(201));
+pm.test("Devuelve id y status", () => {
+  const json = pm.response.json();
+  pm.expect(json).to.have.property("id");
+  pm.expect(json.status).to.eql("CREATED");
+});
+pm.collectionVariables.set("orderId", pm.response.json().id);
+</pre>
+
+  <h3 class="tsec"><span class="num">10</span> Cómo adaptarlo a tu dominio <span class="tag comp">Complemento</span></h3>
+  <div class="tw"><table><thead><tr><th>Orders API</th><th>Matrículas</th><th>Citas médicas</th><th>Inventario</th></tr></thead><tbody>
+    <tr><td><code>/orders</code></td><td><code>/enrollments</code></td><td><code>/appointments</code></td><td><code>/stock-items</code></td></tr>
+    <tr><td>orderId</td><td>enrollmentId</td><td>appointmentId</td><td>stockItemId</td></tr>
+    <tr><td>customerId (query)</td><td>studentId</td><td>patientId</td><td>warehouseId</td></tr>
+    <tr><td>PRODUCT_NOT_AVAILABLE (422)</td><td>COURSE_FULL (409)</td><td>SLOT_TAKEN (409)</td><td>OUT_OF_STOCK (409)</td></tr>
+    <tr><td>CREATED · PAID · CANCELLED</td><td>ENROLLED · WITHDRAWN</td><td>SCHEDULED · CANCELLED · DONE</td><td>ACTIVE · BLOCKED</td></tr></tbody></table></div>
+  <div class="callout exam"><b class="t">Recuerda</b>Cambia también los <code>example</code>, el README y la colección de Postman. Un contrato donde el nombre dice «matrículas» pero los ejemplos hablan de pedidos se nota enseguida.</div>
+
+  <h3 class="tsec"><span class="num">11</span> Antes de entregar</h3>
+  <p>Repasa el <a href="taller.html">checklist del alcance mínimo</a> y revisa que el README responda la pregunta de reflexión. Si quieres añadir seguridad al diseño, mira <a href="seguridad.html">Seguridad de APIs</a>: no es obligatoria en el taller, pero puedes mencionarla en el README como decisión.</p>
+</section>
+
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+<script type="text/plain" data-file="openapi.yaml" data-tab="openapi.yaml" data-desc="El contrato: corazón del taller">
+openapi: 3.0.3                       # versión de la especificación OpenAPI
+info:
+  title: Orders API
+  version: 1.0.0
+  description: |
+    API para la gestión de pedidos.
+    Contrato de integración entre el Sistema de Gestión de Pedidos (proveedor)
+    y la aplicación web de comercio electrónico (consumidor).
+servers:
+  - url: http://localhost:8080
+    description: Servidor local (backend real o mock)
+tags:
+  - name: Orders
+    description: Operaciones sobre pedidos
+
+paths:
+  /orders:
+    post:                              # POST sobre la colección = crear
+      tags: [Orders]
+      summary: Crear un pedido
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              customerId: C-1024
+              items:
+                - productId: P-500
+                  quantity: 2
+      responses:
+        '201':
+          description: Pedido creado
+          headers:
+            Location:
+              description: URI del pedido creado
+              schema:
+                type: string
+              example: /orders/O-9831
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CREATED
+                total: 129.90
+                items:
+                  - productId: P-500
+                    quantity: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':                         # regla de negocio incumplida
+          description: No se puede procesar el pedido (por ejemplo, sin stock)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: PRODUCT_NOT_AVAILABLE
+                message: Product P-500 does not have sufficient stock
+                correlationId: ab23f8b1-91c2-45dc
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:                               # GET sobre la colección = buscar
+      tags: [Orders]
+      summary: Buscar pedidos
+      operationId: listOrders
+      parameters:
+        - name: customerId
+          in: query                    # query parameter: filtra
+          required: false
+          description: Devuelve solo los pedidos de este cliente
+          schema:
+            type: string
+          example: C-1024
+      responses:
+        '200':
+          description: Lista de pedidos (puede estar vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /orders/{orderId}:
+    parameters:
+      - name: orderId
+        in: path                       # path parameter: identifica el recurso
+        required: true
+        description: Identificador del pedido
+        schema:
+          type: string
+        example: O-9831
+    get:
+      tags: [Orders]
+      summary: Consultar un pedido
+      operationId: getOrder
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CREATED
+                total: 129.90
+                items:
+                  - productId: P-500
+                    quantity: 2
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:                             # PATCH = modificación parcial
+      tags: [Orders]
+      summary: Modificar parcialmente un pedido (por ejemplo, cancelarlo)
+      operationId: updateOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderRequest'
+            example:
+              status: CANCELLED
+      responses:
+        '200':
+          description: Pedido actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CANCELLED
+                total: 129.90
+                items:
+                  - productId: P-500
+                    quantity: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El estado actual del pedido no permite el cambio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: ORDER_NOT_MODIFIABLE
+                message: Order O-9831 is already cancelled
+                correlationId: 7d1c0e52-44aa-41b1
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:                            # elementos reutilizables
+  responses:
+    BadRequest:
+      description: Solicitud inválida (datos faltantes o con formato incorrecto)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INVALID_REQUEST
+            message: customerId is required
+            correlationId: 3f2a9c10-0b7e-4d55
+    NotFound:
+      description: El recurso solicitado no existe
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: ORDER_NOT_FOUND
+            message: Order O-0000 was not found
+            correlationId: 9be1a7c4-5521-4f0a
+    InternalError:
+      description: Falla inesperada del servicio
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INTERNAL_ERROR
+            message: Unexpected error. Use the correlationId to report it
+            correlationId: c04d77b2-91ee-4a63
+  schemas:
+    OrderItem:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+          example: P-500
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+    CreateOrderRequest:
+      type: object
+      required: [customerId, items]
+      properties:
+        customerId:
+          type: string
+          example: C-1024
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    UpdateOrderRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [CREATED, PAID, CANCELLED]
+          example: CANCELLED
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          example: O-9831
+        customerId:
+          type: string
+          example: C-1024
+        status:
+          type: string
+          enum: [CREATED, PAID, CANCELLED]
+        total:
+          type: number
+          format: double
+          example: 129.90
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    Error:                             # modelo común de error
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Código estable pensado para máquinas
+          example: PRODUCT_NOT_AVAILABLE
+        message:
+          type: string
+          description: Mensaje pensado para personas
+          example: Product P-500 does not have sufficient stock
+        correlationId:
+          type: string
+          description: Identificador para rastrear la petición entre sistemas
+          example: ab23f8b1-91c2-45dc
+</script>
+<script type="text/plain" data-file="postman/API.postman_collection.json" data-tab="Colección Postman" data-desc="6 requests con tests y ejemplos (v2.1)">
+{
+  "info": {
+    "name": "Orders API",
+    "description": "Colección de pruebas del contrato Orders API (Semana 3).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "orderId",
+      "value": "O-9831"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Crear pedido (POST /orders)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"C-1024\",\n  \"items\": [\n    {\n      \"productId\": \"P-500\",\n      \"quantity\": 2\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/orders",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "orders"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.test(\"Devuelve id y status CREATED\", () => { pm.expect(json).to.have.property(\"id\"); pm.expect(json.status).to.eql(\"CREATED\"); });",
+              "pm.collectionVariables.set(\"orderId\", json.id);"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "201 Created",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"C-1024\",\n  \"items\": [\n    {\n      \"productId\": \"P-500\",\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"id\": \"O-9831\",\n  \"customerId\": \"C-1024\",\n  \"status\": \"CREATED\",\n  \"total\": 129.9,\n  \"items\": [\n    {\n      \"productId\": \"P-500\",\n      \"quantity\": 2\n    }\n  ]\n}"
+        },
+        {
+          "name": "422 Producto sin stock",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"C-1024\",\n  \"items\": [\n    {\n      \"productId\": \"P-500\",\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"code\": \"PRODUCT_NOT_AVAILABLE\",\n  \"message\": \"Product P-500 does not have sufficient stock\",\n  \"correlationId\": \"ab23f8b1-91c2-45dc\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "2. Consultar pedido (GET /orders/{orderId})",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/orders/:orderId",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "orders",
+            ":orderId"
+          ],
+          "variable": [
+            {
+              "key": "orderId",
+              "value": "O-9831"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Tiene los campos del schema Order\", () => { const j = pm.response.json(); [\"id\",\"customerId\",\"status\",\"total\"].forEach(k => pm.expect(j).to.have.property(k)); });"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                ":orderId"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "O-9831"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"id\": \"O-9831\",\n  \"customerId\": \"C-1024\",\n  \"status\": \"CREATED\",\n  \"total\": 129.9,\n  \"items\": [\n    {\n      \"productId\": \"P-500\",\n      \"quantity\": 2\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "3. Buscar pedidos de un cliente (GET /orders?customerId=)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/orders?customerId=C-1024",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "orders"
+          ],
+          "query": [
+            {
+              "key": "customerId",
+              "value": "C-1024"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Devuelve un arreglo\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders?customerId=C-1024",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "C-1024"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "[\n  {\n    \"id\": \"O-9831\",\n    \"customerId\": \"C-1024\",\n    \"status\": \"CREATED\",\n    \"total\": 129.9,\n    \"items\": [\n      {\n        \"productId\": \"P-500\",\n        \"quantity\": 2\n      }\n    ]\n  }\n]"
+        }
+      ]
+    },
+    {
+      "name": "4. Cancelar pedido (PATCH /orders/{orderId})",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"CANCELLED\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/orders/:orderId",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "orders",
+            ":orderId"
+          ],
+          "variable": [
+            {
+              "key": "orderId",
+              "value": "O-9831"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Quedó CANCELLED\", () => pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"));"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                ":orderId"
+              ],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "O-9831"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"id\": \"O-9831\",\n  \"customerId\": \"C-1024\",\n  \"status\": \"CANCELLED\",\n  \"total\": 129.9,\n  \"items\": [\n    {\n      \"productId\": \"P-500\",\n      \"quantity\": 2\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "5. Error: pedido sin stock (espera 422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"C-1024\",\n  \"items\": [\n    {\n      \"productId\": \"P-500\",\n      \"quantity\": 9999\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/orders",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "orders"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Error con code, message y correlationId\", () => { const j = pm.response.json(); [\"code\",\"message\",\"correlationId\"].forEach(k => pm.expect(j).to.have.property(k)); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Error: pedido inexistente (espera 404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/orders/:orderId",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "orders",
+            ":orderId"
+          ],
+          "variable": [
+            {
+              "key": "orderId",
+              "value": "O-0000"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<script type="text/plain" data-file="README.md" data-tab="README.md" data-desc="Plantilla completa con decisiones y reflexión">
+# Orders API
+
+Contrato de integración REST para la gestión de pedidos, especificado con OpenAPI 3.0.3 y probado con Postman.
+
+## 1. Problema de integración
+
+Una plataforma de comercio electrónico necesita comunicarse con el sistema de gestión de pedidos.
+La aplicación cliente debe poder registrar pedidos, consultar su estado y modificarlos (por ejemplo, cancelarlos)
+sin conocer cómo está construido el sistema de pedidos por dentro.
+La API actúa como contrato: define qué operaciones existen, qué datos se envían y qué respuestas y errores se esperan.
+
+## 2. Sistemas involucrados
+
+| Rol | Sistema |
+|-----|---------|
+| Proveedor | Sistema de Gestión de Pedidos (expone la API) |
+| Consumidor | Aplicación web de comercio electrónico |
+
+## 3. Recursos principales
+
+- **Order**: pedido realizado por un cliente (`/orders`, `/orders/{orderId}`).
+- **Customer**: cliente que realiza el pedido (referenciado por `customerId`).
+- **Product**: producto solicitado (referenciado por `productId`).
+
+## 4. Endpoints
+
+| Método | Endpoint | Descripción | Éxito | Errores |
+|--------|----------|-------------|-------|---------|
+| POST | `/orders` | Crear pedido | 201 | 400, 422, 500 |
+| GET | `/orders/{orderId}` | Consultar pedido | 200 | 404, 500 |
+| GET | `/orders?customerId={customerId}` | Buscar pedidos de un cliente | 200 | 400, 500 |
+| PATCH | `/orders/{orderId}` | Modificar pedido (p. ej., cancelar) | 200 | 400, 404, 409, 500 |
+
+## 5. Decisiones de diseño
+
+1. **Recursos en sustantivo plural, sin verbos en la URL.** Se usa `POST /orders` y no `/createOrder`; el método HTTP expresa la intención y la URI identifica el recurso.
+2. **`PATCH` para cancelar en lugar de `DELETE`.** El pedido no se borra: cambia de estado. Así se conserva el historial y el consumidor ve el nuevo `status` en la respuesta.
+3. **Códigos HTTP con significado.** `201` al crear (con cabecera `Location`), `404` si no existe, `422` si falla una regla de negocio (sin stock) y `409` si el estado actual no permite el cambio. Nunca se responde `200` para todo.
+4. **Modelo de error único y reutilizable.** Todos los errores usan `{code, message, correlationId}`. `code` es estable para máquinas, `message` es para personas y `correlationId` permite rastrear la petición entre sistemas. Está declarado una sola vez en `components/schemas/Error` y las respuestas repetidas en `components/responses`.
+5. **Schemas reutilizables con `$ref`.** `Order`, `CreateOrderRequest`, `UpdateOrderRequest` y `Error` se declaran en `components/schemas` para evitar duplicar estructuras.
+
+## 6. Modelo de error
+
+```json
+{
+  "code": "PRODUCT_NOT_AVAILABLE",
+  "message": "Product P-500 does not have sufficient stock",
+  "correlationId": "ab23f8b1-91c2-45dc"
+}
+```
+
+## 7. Cómo probar
+
+1. Abrir Postman y elegir **Import**.
+2. Seleccionar `openapi.yaml` y verificar que se reconozcan las cuatro operaciones.
+3. Revisar o ajustar la colección generada, o importar `postman/API.postman_collection.json`.
+4. Definir la variable `baseUrl` (por defecto `http://localhost:8080`).
+5. Ejecutar los requests: `POST /orders`, `GET /orders/{orderId}` y `GET /orders?customerId=C-1024`.
+
+No se implementó un backend: las pruebas muestran métodos, URLs, parámetros, headers, request bodies y los ejemplos de response definidos en el contrato.
+
+## 8. Seguridad (fuera del alcance del taller)
+
+La autenticación y autorización (OAuth2, JWT), el API Gateway y el rate limiting no forman parte del alcance.
+En una versión productiva, la API se expondría solo por HTTPS, exigiría un token en la cabecera `Authorization` y verificaría que cada cliente solo acceda a sus propios pedidos.
+
+## 9. Reflexión final
+
+**¿Qué ventaja obtiene el sistema consumidor al disponer de un contrato OpenAPI antes de que el proveedor haya terminado de implementar la API?**
+
+El consumidor puede avanzar en paralelo: con el contrato genera mocks y una colección de Postman, desarrolla y prueba su integración contra los ejemplos definidos y detecta ambigüedades del diseño (por ejemplo, un campo faltante o un código de error mal elegido) cuando corregirlas todavía es barato. Además depende menos del cronograma del proveedor y reduce el riesgo de que ambos lados interpreten distinto el mismo servicio.
+</script>
+<script type="text/plain" data-file="extras_opcionales/openapi-con-seguridad.yaml" data-tab="openapi + seguridad" data-desc="Opcional: Bearer/JWT, 401, 403 y 429">
+# openapi-con-seguridad.yaml
+# Versión del contrato con seguridad declarada (Bearer/JWT + 401, 403 y 429).
+# Es OPCIONAL: el taller no exige autenticación. Generada a partir de openapi.yaml.
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 1.1.0
+  description: 'API para la gestión de pedidos.
+
+    Contrato de integración entre el Sistema de Gestión de Pedidos (proveedor)
+
+    y la aplicación web de comercio electrónico (consumidor).
+
+    '
+servers:
+- url: http://localhost:8080
+  description: Servidor local (backend real o mock)
+tags:
+- name: Orders
+  description: Operaciones sobre pedidos
+paths:
+  /orders:
+    post:
+      tags:
+      - Orders
+      summary: Crear un pedido
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            example:
+              customerId: C-1024
+              items:
+              - productId: P-500
+                quantity: 2
+      responses:
+        '201':
+          description: Pedido creado
+          headers:
+            Location:
+              description: URI del pedido creado
+              schema:
+                type: string
+              example: /orders/O-9831
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CREATED
+                total: 129.9
+                items:
+                - productId: P-500
+                  quantity: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: No se puede procesar el pedido (por ejemplo, sin stock)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: PRODUCT_NOT_AVAILABLE
+                message: Product P-500 does not have sufficient stock
+                correlationId: ab23f8b1-91c2-45dc
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      tags:
+      - Orders
+      summary: Buscar pedidos
+      operationId: listOrders
+      parameters:
+      - name: customerId
+        in: query
+        required: false
+        description: Devuelve solo los pedidos de este cliente
+        schema:
+          type: string
+        example: C-1024
+      responses:
+        '200':
+          description: Lista de pedidos (puede estar vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /orders/{orderId}:
+    parameters:
+    - name: orderId
+      in: path
+      required: true
+      description: Identificador del pedido
+      schema:
+        type: string
+      example: O-9831
+    get:
+      tags:
+      - Orders
+      summary: Consultar un pedido
+      operationId: getOrder
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CREATED
+                total: 129.9
+                items:
+                - productId: P-500
+                  quantity: 2
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags:
+      - Orders
+      summary: Modificar parcialmente un pedido (por ejemplo, cancelarlo)
+      operationId: updateOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderRequest'
+            example:
+              status: CANCELLED
+      responses:
+        '200':
+          description: Pedido actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                id: O-9831
+                customerId: C-1024
+                status: CANCELLED
+                total: 129.9
+                items:
+                - productId: P-500
+                  quantity: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El estado actual del pedido no permite el cambio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: ORDER_NOT_MODIFIABLE
+                message: Order O-9831 is already cancelled
+                correlationId: 7d1c0e52-44aa-41b1
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  responses:
+    BadRequest:
+      description: Solicitud inválida (datos faltantes o con formato incorrecto)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INVALID_REQUEST
+            message: customerId is required
+            correlationId: 3f2a9c10-0b7e-4d55
+    NotFound:
+      description: El recurso solicitado no existe
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: ORDER_NOT_FOUND
+            message: Order O-0000 was not found
+            correlationId: 9be1a7c4-5521-4f0a
+    InternalError:
+      description: Falla inesperada del servicio
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INTERNAL_ERROR
+            message: Unexpected error. Use the correlationId to report it
+            correlationId: c04d77b2-91ee-4a63
+    Unauthorized:
+      description: 'No autenticado: falta el token o es inválido o está vencido'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHORIZED
+            message: Missing or invalid token
+            correlationId: e5a1c0de-7b21-4f90
+    Forbidden:
+      description: Autenticado, pero sin permiso sobre este recurso
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: FORBIDDEN
+            message: You do not have access to this order
+            correlationId: 1b9d3f6a-20cc-4e7d
+    TooManyRequests:
+      description: Se superó el límite de solicitudes
+      headers:
+        Retry-After:
+          description: Segundos a esperar antes de reintentar
+          schema:
+            type: integer
+          example: 60
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: TOO_MANY_REQUESTS
+            message: Rate limit exceeded
+            correlationId: 6c2e8b19-aa03-4d12
+  schemas:
+    OrderItem:
+      type: object
+      required:
+      - productId
+      - quantity
+      properties:
+        productId:
+          type: string
+          example: P-500
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+    CreateOrderRequest:
+      type: object
+      required:
+      - customerId
+      - items
+      properties:
+        customerId:
+          type: string
+          example: C-1024
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    UpdateOrderRequest:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - CREATED
+          - PAID
+          - CANCELLED
+          example: CANCELLED
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          example: O-9831
+        customerId:
+          type: string
+          example: C-1024
+        status:
+          type: string
+          enum:
+          - CREATED
+          - PAID
+          - CANCELLED
+        total:
+          type: number
+          format: double
+          example: 129.9
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    Error:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          description: Código estable pensado para máquinas
+          example: PRODUCT_NOT_AVAILABLE
+        message:
+          type: string
+          description: Mensaje pensado para personas
+          example: Product P-500 does not have sufficient stock
+        correlationId:
+          type: string
+          description: Identificador para rastrear la petición entre sistemas
+          example: ab23f8b1-91c2-45dc
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Token JWT en la cabecera Authorization: Bearer <token>'
+security:
+- bearerAuth: []
+</script>
+<script type="text/plain" data-file="extras_opcionales/server/server.js" data-tab="server.js (opcional)" data-desc="Backend Express de ejemplo">
+// server.js · Backend de ejemplo (OPCIONAL) que cumple el contrato openapi.yaml
+// El taller NO exige backend. Úsalo solo para probar tu contrato con respuestas reales.
+//
+//   npm install
+//   node server.js                       -> API abierta en http://localhost:8080
+//   API_TOKEN=secreto123 node server.js  -> exige Authorization: Bearer secreto123
+
+const express = require('express');
+const crypto = require('crypto');
+
+const app = express();
+const PORT = process.env.PORT || 8080;
+const API_TOKEN = process.env.API_TOKEN; // si existe, se activa la autenticación
+
+// ---------- "Base de datos" en memoria ----------
+const STOCK = { 'P-500': 10, 'P-501': 0 };
+const PRICE = { 'P-500': 64.95, 'P-501': 20.0 };
+const orders = new Map([
+  ['O-9831', { id: 'O-9831', customerId: 'C-1024', status: 'CREATED', total: 129.9,
+               items: [{ productId: 'P-500', quantity: 2 }] }],
+]);
+let seq = 9831;
+
+// ---------- Utilidades ----------
+const fail = (res, status, code, message) =>
+  res.status(status).json({ code, message, correlationId: crypto.randomUUID() });
+
+// ---------- Seguridad básica (ver la página «Seguridad de APIs») ----------
+app.disable('x-powered-by');                       // no revelar la tecnología
+app.use((req, res, next) => {                      // cabecera de seguridad
+  res.set('X-Content-Type-Options', 'nosniff');
+  next();
+});
+app.use(express.json({ limit: '10kb' }));          // limita el tamaño del body
+
+const hits = new Map();                            // rate limiting simple: 100 req/min por IP
+app.use((req, res, next) => {
+  const now = Date.now();
+  const list = (hits.get(req.ip) || []).filter((t) => now - t < 60000);
+  list.push(now);
+  hits.set(req.ip, list);
+  if (list.length > 100) {
+    res.set('Retry-After', '60');
+    return fail(res, 429, 'TOO_MANY_REQUESTS', 'Rate limit exceeded');
+  }
+  next();
+});
+
+app.use((req, res, next) => {                      // autenticación Bearer (opcional)
+  if (!API_TOKEN) return next();
+  const header = req.get('authorization') || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+  const a = Buffer.from(token);
+  const b = Buffer.from(API_TOKEN);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return fail(res, 401, 'UNAUTHORIZED', 'Missing or invalid token');
+  }
+  next();
+});
+
+// ---------- Validaciones ----------
+function validateCreate(body) {
+  if (!body || typeof body !== 'object') return 'Body must be a JSON object';
+  if (typeof body.customerId !== 'string' || !body.customerId.trim()) return 'customerId is required';
+  if (!Array.isArray(body.items) || body.items.length === 0) return 'items must be a non-empty array';
+  for (const it of body.items) {
+    if (!it || typeof it.productId !== 'string' || !it.productId) return 'productId is required in every item';
+    if (!Number.isInteger(it.quantity) || it.quantity < 1) return 'quantity must be an integer >= 1';
+  }
+  return null;
+}
+
+// ---------- Endpoints ----------
+// POST /orders -> 201 | 400 | 422
+app.post('/orders', (req, res) => {
+  const problem = validateCreate(req.body);
+  if (problem) return fail(res, 400, 'INVALID_REQUEST', problem);
+
+  for (const it of req.body.items) {
+    if (STOCK[it.productId] === undefined || STOCK[it.productId] < it.quantity) {
+      return fail(res, 422, 'PRODUCT_NOT_AVAILABLE',
+        `Product ${it.productId} does not have sufficient stock`);
+    }
+  }
+  let total = 0;
+  for (const it of req.body.items) {
+    STOCK[it.productId] -= it.quantity;
+    total += PRICE[it.productId] * it.quantity;
+  }
+  const order = {
+    id: `O-${++seq}`,
+    customerId: req.body.customerId,
+    status: 'CREATED',
+    total: Math.round(total * 100) / 100,
+    items: req.body.items.map(({ productId, quantity }) => ({ productId, quantity })),
+  };
+  orders.set(order.id, order);
+  res.status(201).location(`/orders/${order.id}`).json(order);
+});
+
+// GET /orders?customerId=... -> 200
+app.get('/orders', (req, res) => {
+  let list = [...orders.values()];
+  if (req.query.customerId !== undefined) {
+    if (typeof req.query.customerId !== 'string' || !req.query.customerId) {
+      return fail(res, 400, 'INVALID_REQUEST', 'customerId must be a non-empty string');
+    }
+    list = list.filter((o) => o.customerId === req.query.customerId);
+  }
+  res.json(list);
+});
+
+// GET /orders/:orderId -> 200 | 404
+app.get('/orders/:orderId', (req, res) => {
+  const order = orders.get(req.params.orderId);
+  if (!order) return fail(res, 404, 'ORDER_NOT_FOUND', `Order ${req.params.orderId} was not found`);
+  res.json(order);
+});
+
+// PATCH /orders/:orderId -> 200 | 400 | 404 | 409
+app.patch('/orders/:orderId', (req, res) => {
+  const order = orders.get(req.params.orderId);
+  if (!order) return fail(res, 404, 'ORDER_NOT_FOUND', `Order ${req.params.orderId} was not found`);
+  const status = req.body && req.body.status;
+  if (!['CREATED', 'PAID', 'CANCELLED'].includes(status)) {
+    return fail(res, 400, 'INVALID_REQUEST', 'status must be CREATED, PAID or CANCELLED');
+  }
+  if (order.status === 'CANCELLED') {
+    return fail(res, 409, 'ORDER_NOT_MODIFIABLE', `Order ${order.id} is already cancelled`);
+  }
+  order.status = status;
+  res.json(order);
+});
+
+// ---------- Rutas inexistentes y errores inesperados ----------
+app.use((req, res) => fail(res, 404, 'NOT_FOUND', 'Route not found'));
+
+app.use((err, req, res, next) => {                 // nunca se filtra el stack trace al cliente
+  if (err.type === 'entity.parse.failed') return fail(res, 400, 'INVALID_JSON', 'Malformed JSON body');
+  if (err.type === 'entity.too.large') return fail(res, 413, 'PAYLOAD_TOO_LARGE', 'Body is too large');
+  console.error(err);                              // el detalle queda solo en el log del servidor
+  fail(res, 500, 'INTERNAL_ERROR', 'Unexpected error. Use the correlationId to report it');
+});
+
+app.listen(PORT, () => console.log(`Orders API en http://localhost:${PORT}` +
+  (API_TOKEN ? ' (con autenticación Bearer)' : ' (sin autenticación)')));
+</script>
+<script type="text/plain" data-file="extras_opcionales/server/package.json" data-tab="package.json" data-desc="Dependencias del backend">
+{
+  "name": "orders-api-demo",
+  "version": "1.0.0",
+  "description": "Backend de ejemplo OPCIONAL para probar el contrato openapi.yaml",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
+</script>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

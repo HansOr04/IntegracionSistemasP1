@@ -1,0 +1,1 @@
+Abre index.html en tu navegador. Todas las páginas comparten la carpeta assets/. No necesitas internet (las fuentes de Google son opcionales).

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semana 1 · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="semana1">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week" id="s1">
+  <span class="badge">Semana 1</span>
+  <h2 class="sec">Introducción y panorama histórico</h2>
+  <div class="obj"><b>Objetivos de aprendizaje</b>
+    <ul>
+      <li>Explicar qué es la integración de sistemas y por qué es una disciplina propia.</li>
+      <li>Distinguir acoplamiento (coupling) de cohesión (cohesion) y razonar con ellos.</li>
+      <li>Ubicar históricamente Batch, EAI, SOA, ESB, microservicios y EDA, con su problema y sus límites.</li>
+      <li>Analizar casos reales de integración con esos conceptos.</li>
+    </ul></div>
+  <div class="central">Idea central: cada generación de integración redujo un tipo de acoplamiento, pero introdujo nuevos compromisos.</div>
+
+  <article class="topic" id="s1-int">
+    <h3>1.1 ¿Qué es la integración de sistemas? <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> La integración de sistemas (system integration) es la disciplina que logra que aplicaciones desarrolladas de forma independiente, con tecnologías, modelos de datos, ritmos de cambio y dueños distintos, cooperen para soportar procesos de negocio completos, intercambiando datos o funcionalidad.</p>
+    <p><b>Por qué existe.</b> Las organizaciones acumulan ERP, CRM, sistemas legacy y SaaS. Sin integración aparecen silos (data silos): doble digitación, datos inconsistentes y procesos manuales.</p>
+    <p><b>Por qué es difícil.</b> Hohpe y Woolf (<i>Enterprise Integration Patterns</i>, 2004, cap. 1) señalan cuatro dificultades: la red no es confiable, la red es lenta, las aplicaciones son distintas y el cambio es inevitable. Por eso integrar no es «solo conectar». Identifican además cuatro estilos de integración: File Transfer, Shared Database, Remote Procedure Invocation y Messaging (los de la Semana 2).</p>
+    <p><b>Ejemplo real.</b> En una universidad, Matrícula registra al estudiante, Finanzas genera el cobro y el CRM le comunica novedades. Si no se integran, alguien reescribe datos a mano en tres sistemas.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Fuente de verdad más consistente</li><li>Automatiza procesos extremo a extremo</li><li>Visión unificada del cliente o estudiante</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Dependencias entre sistemas</li><li>Fallos en cascada si se diseña mal</li><li>Costo de mantener interfaces</li></ul></div></div>
+  </article>
+
+  <article class="topic" id="s1-coup">
+    <h3>1.2 Acoplamiento y cohesión <span class="tag comp">Complemento</span></h3>
+    <p><b>Acoplamiento (coupling):</b> grado de dependencia entre dos componentes. Cuanto más debe saber uno del otro, más acoplados están y más probable es que un cambio en uno rompa al otro.</p>
+    <p><b>Cohesión (cohesion):</b> grado en que los elementos de un mismo módulo trabajan por un propósito único y bien definido. Se busca <b>bajo acoplamiento y alta cohesión</b>.</p>
+    <div class="tw"><table><thead><tr><th>Tipo de acoplamiento</th><th>Pregunta clave</th><th>Alto</th><th>Bajo</th></tr></thead><tbody>
+      <tr><td>Plataforma</td><td>¿Deben usar la misma tecnología?</td><td>Ambos Java con serialización nativa</td><td>JSON sobre HTTP</td></tr>
+      <tr><td>Temporal</td><td>¿Deben estar activos a la vez?</td><td>Llamada síncrona (RPC)</td><td>Cola de mensajes</td></tr>
+      <tr><td>De ubicación</td><td>¿Conocen la dirección física?</td><td>IP fija en el código</td><td>Nombre lógico, broker o gateway</td></tr>
+      <tr><td>De datos / formato</td><td>¿Comparten el modelo interno?</td><td>Misma base de datos</td><td>Contrato explícito (schema)</td></tr>
+      <tr><td>Semántico</td><td>¿Comparten reglas internas?</td><td>El cliente replica lógica del servidor</td><td>El servidor encapsula la regla</td></tr></tbody></table></div>
+    <div class="callout exam"><b class="t">Clave para el examen</b>Integrar bien no significa «conectar»: significa conectar con el mínimo acoplamiento posible. Cada estilo se evalúa por qué tipos de acoplamiento introduce.</div>
+    <div class="callout err"><b class="t">Error común</b>Pensar que bajo acoplamiento es lo mismo que «sin dependencia». Siempre hay dependencia; lo que cambia es de qué depende (un contrato estable) y no de la implementación interna.</div>
+  </article>
+
+  <article class="topic" id="s1-batch">
+    <h3>1.3 Procesamiento por lotes (Batch) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> Los datos se acumulan y se procesan juntos, en bloque, en una ventana programada (nocturna, quincenal). Es el enfoque dominante en los mainframes de las décadas de 1960 a 1980.</p>
+    <p><b>Cómo funciona.</b> Un programador de tareas (scheduler, cron, JCL) lanza un job que extrae (extract), transforma (transform) y carga (load) archivos planos u otros formatos. Los resultados se revisan después, a menudo en archivos de errores.</p>
+    <div class="dg" data-d="batch"></div><div class="figcap">Batch: el sistema origen vuelca datos y un job los carga más tarde.</div>
+    <p><b>Ejemplos.</b> Nómina quincenal, conciliación bancaria nocturna, ETL hacia un data warehouse.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Simple y bien comprendido</li><li>Muy eficiente con grandes volúmenes</li><li>Usa recursos fuera de horario pico</li><li>Reprocesar un lote es relativamente fácil</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Latencia alta: datos desactualizados</li><li>Errores se detectan tarde</li><li>Picos de carga en la ventana</li><li>No sirve para interacción inmediata</li></ul></div></div>
+    <div class="when"><div><b>Cuándo usarlo</b><ul><li>Reportes, conciliaciones, migraciones masivas</li><li>Sistemas legacy sin API</li></ul></div><div><b>Cuándo no</b><ul><li>Decisiones en tiempo real</li><li>Experiencias interactivas de usuario</li></ul></div></div>
+  </article>
+
+  <article class="topic" id="s1-eai">
+    <h3>1.4 Integración de aplicaciones empresariales (EAI) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> EAI (Enterprise Application Integration) es el conjunto de estilos y herramientas, como brokers, hubs, adaptadores y transformadores, para integrar aplicaciones empresariales mediante un middleware central. Surge en los años 90.</p>
+    <p><b>Problema que resolvía.</b> El «espagueti» punto a punto (point-to-point): con <i>n</i> aplicaciones hay hasta <i>n(n−1)/2</i> conexiones, cada una con su formato.</p>
+    <p><b>Cómo funciona.</b> Cada aplicación se conecta al hub mediante un adaptador. El hub enruta y transforma los mensajes, a menudo hacia un modelo canónico de datos (canonical data model). Así el número de conexiones crece linealmente (hub-and-spoke).</p>
+    <div class="dg" data-d="p2p"></div><div class="figcap">Punto a punto frente a hub-and-spoke.</div>
+    <p><b>Ejemplo.</b> Un banco de los 90 integra core bancario, tarjetas y CRM con productos como TIBCO, webMethods o IBM MQ.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Menos conexiones que gestionar</li><li>Transformación y enrutamiento centralizados</li><li>Reutiliza adaptadores</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>El hub es punto único de fallo (single point of failure) y cuello de botella</li><li>Productos propietarios y costosos (vendor lock-in)</li><li>El modelo canónico es difícil de gobernar</li></ul></div></div>
+    <div class="callout exam"><b class="t">Clave para el examen</b>EAI = reducir el caos punto a punto con un middleware central (hub-and-spoke). Su debilidad es esa misma centralización.</div>
+  </article>
+
+  <article class="topic" id="s1-soa">
+    <h3>1.5 Arquitectura orientada a servicios (SOA) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> SOA (Service-Oriented Architecture) es un estilo arquitectónico en el que la funcionalidad se expone como servicios con contratos bien definidos, descubribles y reutilizables, que se componen para formar procesos de negocio.</p>
+    <p><b>Principios.</b> Contrato estandarizado, bajo acoplamiento, abstracción de la implementación, reutilización, autonomía, ausencia de estado (statelessness), descubrimiento y composición.</p>
+    <p><b>Tecnologías típicas.</b> SOAP, WSDL (contrato), UDDI (registro) y la familia WS-* (seguridad, transacciones).</p>
+    <p><b>Ejemplo.</b> Un servicio <code>ConsultarCliente</code> reutilizado por la web, el call center y el sistema de facturación.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Reutilización de capacidades de negocio</li><li>Interoperabilidad entre plataformas</li><li>Contratos formales</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Gobernanza pesada</li><li>XML/SOAP verboso</li><li>Servicios de grano grueso y ESB centralizado como cuello de botella</li></ul></div></div>
+  </article>
+
+  <article class="topic" id="s1-esb">
+    <h3>1.6 Bus de servicios empresarial (ESB) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> El ESB (Enterprise Service Bus) es un middleware que actúa como columna vertebral (backbone) de las comunicaciones: media entre consumidores y proveedores de servicios.</p>
+    <p><b>Funciones.</b> Enrutamiento (por contenido), transformación de mensajes (por ejemplo XSLT), mediación de protocolos (HTTP ↔ JMS ↔ FTP), orquestación, seguridad y monitoreo.</p>
+    <div class="dg" data-d="esb"></div><div class="figcap">El ESB media entre proveedores de servicios y consumidores.</div>
+    <p><b>Ejemplos de productos.</b> Mule, WSO2 ESB, IBM Integration Bus, Oracle Service Bus.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Desacopla protocolos y formatos</li><li>Punto único para seguridad y monitoreo</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Lógica de negocio acumulada en el bus («tuberías inteligentes»)</li><li>Cuello de botella organizacional y técnico</li></ul></div></div>
+    <div class="callout err"><b class="t">Error común</b>Confundir SOA con ESB. SOA es un estilo de arquitectura; el ESB es una tecnología que puede usarse para implementarla (y no es la única forma).</div>
+  </article>
+
+  <article class="topic" id="s1-ms">
+    <h3>1.7 Microservicios (microservices) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> Estilo en el que una aplicación se compone de servicios pequeños y autónomos, organizados por capacidad de negocio, que se despliegan de forma independiente y se comunican con mecanismos ligeros (HTTP/REST o mensajería).</p>
+    <p><b>Cómo funciona.</b> Cada servicio tiene su propio proceso y su propia base de datos (database per service); se despliega con CI/CD y contenedores. Se habla de «endpoints inteligentes, tuberías tontas» (smart endpoints, dumb pipes): la inteligencia está en los servicios, no en un ESB. Se apoya en el diseño guiado por el dominio (DDD) y sus contextos delimitados (bounded contexts).</p>
+    <div class="dg" data-d="ms"></div><div class="figcap">Cada microservicio es dueño de sus datos; el gateway es el punto de entrada.</div>
+    <p><b>Ejemplos.</b> Netflix migró a microservicios en AWS tras un incidente de corrupción de base de datos en 2008; Amazon es citado como pionero con su obligación de exponer toda funcionalidad por interfaces de servicio.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Despliegue y escalado independientes</li><li>Equipos autónomos</li><li>Aislamiento de fallos</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Complejidad operativa y de red</li><li>Consistencia eventual en lugar de transacciones ACID</li><li>Observabilidad y pruebas más difíciles</li></ul></div></div>
+    <div class="when"><div><b>Cuándo usarlo</b><ul><li>Equipos grandes y dominio bien entendido</li><li>Componentes con necesidades de escala distintas</li></ul></div><div><b>Cuándo no</b><ul><li>Equipos pequeños o dominio incierto: un monolito modular suele ser mejor punto de partida</li></ul></div></div>
+  </article>
+
+  <article class="topic" id="s1-eda">
+    <h3>1.8 Arquitecturas orientadas a eventos (EDA) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> EDA (Event-Driven Architecture): los componentes se comunican produciendo y reaccionando a eventos, hechos inmutables que ya ocurrieron (por ejemplo <code>PedidoCreado</code>).</p>
+    <p><b>Cómo funciona.</b> Un productor publica el evento en un broker (Kafka, RabbitMQ); los consumidores se suscriben (publish/subscribe) y reaccionan de forma asíncrona. El productor no conoce a los consumidores.</p>
+    <div class="dg" data-d="eda"></div><div class="figcap">Un evento, varios consumidores independientes.</div>
+    <p><b>Patrones asociados.</b> Event notification, event-carried state transfer, event sourcing y CQRS.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Desacoplamiento temporal y de ubicación</li><li>Fácil agregar nuevos consumidores</li><li>Escala bien</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Consistencia eventual</li><li>Depuración y trazabilidad más difíciles</li><li>Duplicados y orden: exige consumidores idempotentes</li><li>Versionado de eventos</li></ul></div></div>
+    <div class="callout exam"><b class="t">Clave para el examen</b>Evento = hecho pasado que informa («PedidoCreado»). Comando = orden dirigida a alguien («CrearPedido»). El evento no espera una acción concreta.</div>
+  </article>
+
+  <article class="topic" id="s1-cmp">
+    <h3>1.9 Panorama comparado <span class="tag comp">Complemento</span></h3>
+    <div class="tw"><table><thead><tr><th>Enfoque</th><th>Topología</th><th>Comunicación</th><th>Acoplamiento principal</th><th>Principal límite</th></tr></thead><tbody>
+      <tr><td>Batch</td><td>Punto a punto vía archivos</td><td>Diferida</td><td>Formato y horario</td><td>Latencia</td></tr>
+      <tr><td>EAI</td><td>Hub-and-spoke</td><td>Mensajes vía hub</td><td>Al hub y al modelo canónico</td><td>Hub único</td></tr>
+      <tr><td>SOA / ESB</td><td>Servicios + bus</td><td>SOAP, síncrona o asíncrona</td><td>Al contrato WSDL y al bus</td><td>Gobernanza y bus central</td></tr>
+      <tr><td>APIs / REST</td><td>Cliente a recurso</td><td>HTTP síncrona</td><td>Al contrato de la API</td><td>Acoplamiento temporal</td></tr>
+      <tr><td>Microservicios</td><td>Malla de servicios</td><td>REST / mensajes</td><td>Entre servicios vecinos</td><td>Complejidad distribuida</td></tr>
+      <tr><td>EDA</td><td>Broker + suscriptores</td><td>Asíncrona por eventos</td><td>Al esquema del evento</td><td>Consistencia eventual</td></tr></tbody></table></div>
+  </article>
+
+  <article class="topic" id="s1-casos">
+    <h3>1.10 Casos reales (post-sesión) <span class="tag comp">Complemento</span></h3>
+    <ul>
+      <li><b>Bancos:</b> core bancario legacy con procesos Batch nocturnos de compensación, rodeado de APIs y mensajería para canales digitales.</li>
+      <li><b>Netflix:</b> de monolito a cientos de microservicios para escalar y resistir fallos.</li>
+      <li><b>Amazon:</b> la exigencia de que los equipos expongan sus capacidades solo mediante interfaces de servicio impulsó SOA y luego AWS.</li>
+      <li><b>LinkedIn / Uber:</b> LinkedIn creó Kafka para mover flujos de eventos; Uber y muchas plataformas lo usan como columna vertebral de eventos.</li>
+    </ul>
+    <p>Al analizar un caso, pregunte siempre: ¿qué problema de acoplamiento resolvía?, ¿qué límite introdujo?, ¿qué estilo coexiste con él?</p>
+  </article>
+</section>
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

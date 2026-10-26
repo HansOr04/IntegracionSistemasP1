@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taller (repaso) · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="taller">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week w3" id="taller">
+  <span class="badge">Repaso · Taller</span>
+  <h2 class="sec">🧪 Taller: Diseño de una API REST como contrato de integración</h2>
+  <p><span class="tag pdf">Del PDF</span> Consigna ISWZ3104 · Semana 3 · OpenAPI + Postman · Trabajo práctico.</p>
+  <div class="central">🎯 Objetivo: diseñar bien el CONTRATO de integración. No se evalúa el backend completo.</div>
+
+  <h3 class="tsec"><span class="num">1</span> El taller en 20 segundos</h3>
+  <div class="tcards">
+    <div class="tcard"><div class="ic">🧩</div><h4>Qué haces</h4><ul><li>Eliges un dominio</li><li>Diseñas una API REST</li><li>La formalizas en OpenAPI</li><li>La pruebas en Postman</li></ul></div>
+    <div class="tcard ok"><div class="ic">📦</div><h4>Qué entregas</h4><ul><li><code>openapi.yaml</code> (o .json)</li><li><code>README.md</code></li><li><code>postman/API.postman_collection.json</code></li></ul></div>
+    <div class="tcard no"><div class="ic">🚫</div><h4>Qué NO haces</h4><ul><li>Backend ni base de datos</li><li>OAuth2 / JWT</li><li>API Gateway, rate limiting</li><li>Service Mesh, Kubernetes, microservicios completos</li><li>Observabilidad distribuida</li></ul></div>
+  </div>
+  <div class="steps"><span>💡 Necesidad de negocio</span><i>→</i><span>📜 Contrato</span><i>→</i><span>✅ Validación</span><i>→</i><span>⚙️ Implementación</span></div>
+  <p class="figcap">Esto es <b>Contract First</b>: primero el contrato, luego el código. Nunca al revés.</p>
+
+  <div class="callout idea"><b class="t">⏱️ Plan de repaso de 15 minutos</b>
+    ① Ruta de 9 pasos (3 min) → ② Juego método + código (3 min) → ③ Checklist de alcance (4 min) → ④ Verdadero o falso (3 min) → ⑤ Pregunta de reflexión (2 min).</div>
+
+  <h3 class="tsec"><span class="num">2</span> Elige un dominio y mira cómo se vería</h3>
+  <p>El taller ofrece 5 dominios. Toca uno para ver un ejemplo de contexto, recursos y endpoints. <span class="tag comp">Complemento</span> <small>(solo «pedidos» viene explícito en el PDF; los demás son ejemplos para practicar)</small></p>
+  <div class="chips" id="domchips"></div>
+  <div id="domout"></div>
+
+  <h3 class="tsec"><span class="num">3</span> Ruta de 9 pasos</h3>
+  <p>Toca cada número para ver qué hacer y un ejemplo con la Orders API.</p>
+  <div class="stp" id="stp"></div>
+  <div class="pdetail" id="pdetail"></div>
+
+  <h3 class="tsec"><span class="num">4</span> Anatomía de un endpoint</h3>
+  <div class="callout exam"><b class="t">Regla mental</b>🧱 Recurso en la URI + 🎯 intención en el método. Nunca verbos en la URL.</div>
+  <div class="chips">
+    <span class="chip static"><span class="pill m-get">GET</span> consultar</span>
+    <span class="chip static"><span class="pill m-post">POST</span> crear</span>
+    <span class="chip static"><span class="pill m-put">PUT</span> reemplazar completo</span>
+    <span class="chip static"><span class="pill m-patch">PATCH</span> modificar parcial</span>
+    <span class="chip static"><span class="pill m-delete">DELETE</span> eliminar</span>
+  </div>
+  <div class="tcards">
+    <div class="tcard ok"><span class="pill m-post">POST</span> <code>/orders</code>
+      <ul><li>🎯 Crea un pedido</li><li>📥 Body: <code>customerId</code>, <code>items[]</code></li><li>✅ 201 Created</li><li>❌ 400 · 422 · 500</li></ul></div>
+    <div class="tcard"><span class="pill m-get">GET</span> <code>/orders/{orderId}</code>
+      <ul><li>🧷 <b>Path parameter</b>: identifica el recurso</li><li>✅ 200 OK</li><li>❌ 404 · 500</li></ul></div>
+    <div class="tcard"><span class="pill m-get">GET</span> <code>/orders?customerId=C-1024</code>
+      <ul><li>🔎 <b>Query parameter</b>: filtra la búsqueda</li><li>✅ 200 OK</li><li>❌ 400 · 500</li></ul></div>
+    <div class="tcard warn"><span class="pill m-patch">PATCH</span> <code>/orders/{orderId}</code>
+      <ul><li>✏️ Cambia solo algunos campos</li><li>📥 Body: <code>status</code></li><li>✅ 200 OK</li><li>❌ 404 · 409 · 422</li></ul></div>
+  </div>
+  <div class="two">
+    <div><h4>📥 Request (ejemplo del PDF)</h4><pre class="plain">POST /orders
+{
+  "customerId": "C-1024",
+  "items": [
+    { "productId": "P-500",
+      "quantity": 2 }
+  ]
+}</pre></div>
+    <div><h4>📤 Response (ejemplo del PDF)</h4><pre class="plain">201 Created
+{
+  "id": "O-9831",
+  "customerId": "C-1024",
+  "status": "CREATED",
+  "total": 129.90
+}</pre></div>
+  </div>
+  <div class="tcards">
+    <div class="tcard ok"><div class="ic">🟢</div><h4>Éxito</h4><p>200 OK · 201 Created · 204 No Content</p><small>Resultado exitoso según el tipo de operación</small></div>
+    <div class="tcard warn"><div class="ic">🟠</div><h4>Error del consumidor</h4><p>400 · 404 · 409 · 422</p><small>Solicitud inválida, recurso inexistente o conflicto de negocio</small></div>
+    <div class="tcard no"><div class="ic">🔴</div><h4>Error del proveedor</h4><p>500 Internal Server Error</p><small>Falla inesperada del servicio</small></div>
+  </div>
+  <p>📏 <b>Mínimo por operación:</b> 1 respuesta exitosa + 2 escenarios de error. No uses códigos de forma arbitraria.</p>
+  <h4>🚨 Modelo de error común</h4>
+  <pre class="plain">{
+  "code": "PRODUCT_NOT_AVAILABLE",      ← para máquinas (obligatorio)
+  "message": "Product P-500 does not have sufficient stock",  ← para personas (obligatorio)
+  "correlationId": "ab23f8b1-91c2-45dc"  ← para rastrear (buena práctica)
+}</pre>
+
+  <h3 class="tsec"><span class="num">5</span> Juego: elige el método y el código</h3>
+  <p>Para cada situación elige el método HTTP y el código de respuesta más adecuados.</p>
+  <div id="game"></div>
+  <div class="bar"><button class="btn primary" id="gcheck">Comprobar</button><button class="btn" id="greset">↺ Reiniciar</button><span class="score" id="gscore">—</span></div>
+
+  <h3 class="tsec"><span class="num">6</span> Esqueleto OpenAPI mínimo</h3>
+  <pre class="code" id="yamlmin"></pre>
+  <div class="tcards">
+    <div class="tcard"><b>openapi</b><br><small>Versión de la especificación (3.0.3)</small></div>
+    <div class="tcard"><b>info</b><br><small>Título, versión y descripción</small></div>
+    <div class="tcard"><b>servers</b><br><small>URL base donde vive la API</small></div>
+    <div class="tcard"><b>paths</b><br><small>Endpoints y sus operaciones</small></div>
+    <div class="tcard"><b>components</b><br><small>Lo reutilizable</small></div>
+    <div class="tcard"><b>schemas</b><br><small>Modelos reutilizados con <code>$ref</code></small></div>
+  </div>
+  <div class="callout exam"><b class="t">Clave para el examen</b>📝 Declara los modelos una sola vez en <code>components/schemas</code>. 💬 Incluye <code>example</code> de request y response para que otro desarrollador lo entienda. Contrato completo en <a href="practica.html">Práctica de API</a>.</div>
+
+  <h3 class="tsec"><span class="num">7</span> Postman sin backend</h3>
+  <div class="steps"><span>1️⃣ Abrir Postman</span><i>→</i><span>2️⃣ Importar el OpenAPI</span><i>→</i><span>3️⃣ Verificar operaciones</span><i>→</i><span>4️⃣ Crear o ajustar la colección</span><i>→</i><span>5️⃣ Preparar ≥ 3 requests</span></div>
+  <div class="chips"><span class="chip static"><span class="pill m-post">POST</span> /orders</span><span class="chip static"><span class="pill m-get">GET</span> /orders/{orderId}</span><span class="chip static"><span class="pill m-get">GET</span> /orders?customerId=C-1024</span></div>
+  <p>Sin backend, Postman demuestra:</p>
+  <div class="chips"><span class="chip static">✔ colección bien generada</span><span class="chip static">✔ métodos HTTP</span><span class="chip static">✔ URLs</span><span class="chip static">✔ parámetros</span><span class="chip static">✔ headers</span><span class="chip static">✔ request bodies</span><span class="chip static">✔ ejemplos de response del contrato</span></div>
+
+  <h3 class="tsec"><span class="num">8</span> Checklist del alcance mínimo</h3>
+  <div class="prog"><i id="ckbar"></i></div>
+  <p id="cktxt" class="figcap"></p>
+  <div id="cklist"></div>
+
+  <h3 class="tsec"><span class="num">9</span> ¿Cómo te evalúan?</h3>
+  <div id="wbars"></div>
+
+  <h3 class="tsec"><span class="num">10</span> Errores que debes evitar</h3>
+  <div class="xo">
+    <div class="x">❌ <code>/createOrder</code> · <code>/getOrder</code> · <code>/deleteOrder</code></div><div class="v">✅ <code>POST /orders</code> · <code>GET /orders/{id}</code> · <code>DELETE /orders/{id}</code></div>
+    <div class="x">❌ <code>/executeSPCreateOrder</code> · <code>/database/orders</code></div><div class="v">✅ Nombres del dominio, sin detalles internos</div>
+    <div class="x">❌ Siempre <code>200 OK</code>, sin importar el resultado</div><div class="v">✅ 201, 404, 422, 500 según lo que ocurrió</div>
+    <div class="x">❌ <code>{"error": true}</code></div><div class="v">✅ <code>{code, message, correlationId}</code></div>
+    <div class="x">❌ Duplicar el mismo schema en cada endpoint</div><div class="v">✅ <code>components/schemas</code> + <code>$ref</code></div>
+    <div class="x">❌ Escribir primero el código y «inventar» después la documentación</div><div class="v">✅ Contract First: contrato → validación → código</div>
+  </div>
+
+  <h3 class="tsec"><span class="num">11</span> Entregables y README</h3>
+  <div class="two">
+    <div><h4>📁 Estructura de la carpeta</h4><pre class="plain tree">Semana3_API_REST/
+├── openapi.yaml
+├── README.md
+└── postman/
+    └── API.postman_collection.json</pre></div>
+    <div><h4>📝 El README debe tener</h4><ul style="padding-left:18px;margin:0"><li>1. Nombre de la API</li><li>2. Problema de integración</li><li>3. Sistemas: consumidor y proveedor</li><li>4. Recursos principales</li><li>5. Tabla de endpoints</li><li>6. ≥ 3 decisiones de diseño justificadas</li><li>7. Respuesta a la pregunta de reflexión</li></ul></div>
+  </div>
+  <div class="tw"><table><thead><tr><th>Método</th><th>Endpoint</th><th>Descripción</th></tr></thead><tbody>
+    <tr><td>POST</td><td>/orders</td><td>Crear pedido</td></tr>
+    <tr><td>GET</td><td>/orders/{id}</td><td>Consultar pedido</td></tr>
+    <tr><td>GET</td><td>/orders</td><td>Buscar pedidos</td></tr>
+    <tr><td>PATCH</td><td>/orders/{id}</td><td>Modificar pedido</td></tr></tbody></table></div>
+  <details class="case"><summary>💡 Ejemplo de decisión de diseño justificada <span class="tag comp">Complemento</span></summary>
+    <div class="ans"><b>Decisión:</b> usar <code>PATCH /orders/{orderId}</code> para cancelar en vez de <code>DELETE</code>.<br><b>Justificación:</b> el pedido no se borra, solo cambia de estado; así se conserva el historial y el consumidor ve el nuevo <code>status</code> en la respuesta.</div></details>
+
+  <h3 class="tsec"><span class="num">12</span> Pregunta de reflexión final</h3>
+  <div class="callout exam"><b class="t">Pregunta (sección 23 del PDF)</b>¿Qué ventaja obtiene el sistema consumidor al disponer de un contrato OpenAPI antes de que el proveedor haya terminado de implementar la API?</div>
+  <details class="case"><summary>Ver respuesta modelo <span class="tag comp">Complemento</span></summary><div class="ans">
+    <ul><li>🧪 Puede construir y probar su integración <b>en paralelo</b>, con mocks y Postman, sin esperar al backend.</li><li>🔍 Detecta ambigüedades del diseño <b>temprano</b>, cuando corregir es barato.</li><li>🤖 Puede generar clientes y validar su código contra el contrato.</li><li>📅 Depende menos del cronograma del proveedor.</li></ul>
+    <small>Debe demostrar comprensión; no basta repetir una definición.</small></div></details>
+  <div class="two">
+    <div class="good"><b>👀 El consumidor necesita conocer</b><br>Endpoints · métodos · parámetros · request/response · códigos de estado · modelo de error</div>
+    <div class="bad"><b>🙈 Puede ignorar por completo</b><br>Base de datos · lenguaje · stored procedures · servidores · algoritmos internos</div>
+  </div>
+  <p class="figcap">Criterio fundamental del taller: dos sistemas colaboran sin conocer los detalles internos del otro.</p>
+
+  <h3 class="tsec"><span class="num">13</span> Verdadero o falso</h3>
+  <div id="vf"></div>
+  <div class="bar"><button class="btn" id="vfreset">↺ Reiniciar</button><span class="score" id="vfscore">0 / 10</span></div>
+</section>
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

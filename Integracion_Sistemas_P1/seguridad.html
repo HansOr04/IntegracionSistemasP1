@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seguridad de APIs · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="seguridad">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week w3" id="seguridad">
+  <span class="badge">Seguridad</span>
+  <h2 class="sec">🔐 Seguridad de APIs</h2>
+  <p><span class="tag comp">Complemento</span> Esta página no viene en los PDFs. Reúne lo que conviene saber para diseñar APIs seguras y para justificar decisiones en el README.</p>
+  <div class="central">🎯 Idea central: una API expone capacidades de tu sistema; el contrato debe decir también quién puede hacer qué y qué pasa cuando algo falla.</div>
+
+  <h3 class="tsec"><span class="num">1</span> Por qué importa</h3>
+  <div class="tcards">
+    <div class="tcard no"><div class="ic">🎯</div><h4>Superficie de ataque</h4><p>Cada endpoint es una puerta. Cuanto más expones, más debes proteger.</p></div>
+    <div class="tcard"><div class="ic">📜</div><h4>El contrato también protege</h4><p>OpenAPI declara el esquema de seguridad y los errores 401, 403 y 429.</p></div>
+    <div class="tcard warn"><div class="ic">⚖️</div><h4>Alcance del taller</h4><p>OAuth2, JWT, API Gateway y rate limiting <b>no se implementan</b> en el taller, pero puedes explicar cómo los usarías.</p></div>
+  </div>
+
+  <h3 class="tsec"><span class="num">2</span> Los conceptos base</h3>
+  <div class="tw"><table><thead><tr><th>Concepto</th><th>Pregunta</th><th>Se traduce en</th></tr></thead><tbody>
+    <tr><td>Autenticación (authentication)</td><td>¿Quién eres?</td><td><span class="sbadge s4xx">401</span> si falta el token o es inválido</td></tr>
+    <tr><td>Autorización (authorization)</td><td>¿Qué puedes hacer?</td><td><span class="sbadge s4xx">403</span> si estás autenticado pero sin permiso</td></tr>
+    <tr><td>Confidencialidad</td><td>¿Alguien puede leer el tráfico?</td><td>HTTPS (TLS) siempre</td></tr>
+    <tr><td>Integridad y validación</td><td>¿El dato llega bien formado y sin alterar?</td><td><span class="sbadge s4xx">400</span> / <span class="sbadge s4xx">422</span> según el schema</td></tr>
+    <tr><td>Disponibilidad</td><td>¿Se puede abusar del servicio?</td><td>Límite de solicitudes, <span class="sbadge s4xx">429</span> con <code>Retry-After</code></td></tr></tbody></table></div>
+  <div class="callout err"><b class="t">Error común</b>Confundir 401 con 403. <b>401</b> = no sé quién eres. <b>403</b> = sé quién eres, pero no tienes permiso.</div>
+
+  <h3 class="tsec"><span class="num">3</span> Mecanismos de autenticación</h3>
+  <div class="tw"><table><thead><tr><th>Mecanismo</th><th>Cómo funciona</th><th>Úsalo para</th><th>Cuidado</th></tr></thead><tbody>
+    <tr><td>API Key</td><td>Clave en una cabecera (por ejemplo <code>X-API-Key</code>)</td><td>Identificar una aplicación consumidora</td><td>No identifica a la persona; nunca en la URL</td></tr>
+    <tr><td>HTTP Basic</td><td>Usuario y contraseña en Base64</td><td>Pruebas internas</td><td>Base64 no es cifrado; solo con HTTPS; poco recomendable</td></tr>
+    <tr><td>Bearer token / JWT</td><td><code>Authorization: Bearer &lt;token&gt;</code></td><td>APIs con usuarios y permisos (scopes)</td><td>Expiración corta; validar firma, emisor y audiencia</td></tr>
+    <tr><td>OAuth 2.0</td><td>Un servidor de autorización emite tokens de acceso</td><td>Acceso delegado y servicio a servicio</td><td>Elegir bien el flujo</td></tr>
+    <tr><td>mTLS</td><td>Cliente y servidor presentan certificados</td><td>B2B y servicio a servicio de alta seguridad</td><td>Gestión de certificados</td></tr>
+    <tr><td>Firma HMAC</td><td>El emisor firma el mensaje con un secreto</td><td>Verificar webhooks</td><td>Validar firma y marca de tiempo (evita repetición)</td></tr></tbody></table></div>
+
+  <h3 class="tsec"><span class="num">4</span> Anatomía de un JWT</h3>
+  <div class="jwt"><span class="p1">eyJhbGciOiJIUzI1NiJ9</span>.<span class="p2">eyJzdWIiOiJDLTEwMjQiLCJzY29wZSI6Im9yZGVyczpyZWFkIn0</span>.<span class="p3">firma-del-servidor</span></div>
+  <div class="tcards">
+    <div class="tcard"><h4 style="color:#ef4444">1 · Header</h4><p>Algoritmo y tipo.</p><pre class="plain">{"alg":"HS256","typ":"JWT"}</pre></div>
+    <div class="tcard"><h4 style="color:#a855f7">2 · Payload (claims)</h4><p>Quién es y qué puede hacer.</p><pre class="plain">{"sub":"C-1024",
+ "scope":"orders:read",
+ "iss":"auth.miempresa.com",
+ "aud":"orders-api",
+ "exp":1767225600}</pre></div>
+    <div class="tcard"><h4 style="color:#0ea5e9">3 · Firma</h4><p>Garantiza que nadie alteró header ni payload.</p></div>
+  </div>
+  <div class="callout err"><b class="t">Error común</b>Creer que un JWT está cifrado. Normalmente solo está <b>firmado</b>: el payload se codifica en Base64URL y cualquiera puede leerlo. No guardes secretos ni datos sensibles dentro.</div>
+  <p>La API debe validar en cada petición: la <b>firma</b>, la <b>expiración</b> (<code>exp</code>), el <b>emisor</b> (<code>iss</code>), la <b>audiencia</b> (<code>aud</code>) y los <b>permisos</b> (<code>scope</code>).</p>
+
+  <h3 class="tsec"><span class="num">5</span> OAuth 2.0 en pocas palabras</h3>
+  <div class="dg" data-d="oauth"></div>
+  <div class="figcap">Idea: el cliente obtiene un token de acceso y lo presenta a la API en la cabecera Authorization.</div>
+  <div class="tw"><table><thead><tr><th>Flujo</th><th>Cuándo</th></tr></thead><tbody>
+    <tr><td>Authorization Code + PKCE</td><td>Apps web y móviles con una persona que inicia sesión (el recomendado)</td></tr>
+    <tr><td>Client Credentials</td><td>Servicio a servicio, sin usuario (por ejemplo inventario consulta pedidos)</td></tr>
+    <tr><td>Device Code</td><td>Dispositivos sin teclado cómodo (TV, IoT)</td></tr>
+    <tr><td>Implicit y Password</td><td>Desaconsejados: ya no se recomienda usarlos</td></tr></tbody></table></div>
+
+  <h3 class="tsec"><span class="num">6</span> OWASP API Security Top 10 (2023)</h3>
+  <p>Lista de los riesgos más frecuentes en APIs. Conviene reconocer los nombres y la idea de cada uno.</p>
+  <div class="ogrid">
+    <div class="ocard"><b>API1 · Broken Object Level Authorization (BOLA)</b>Pedir el recurso de otra persona cambiando el id. <small>Mitiga: comprobar que el objeto pertenece a quien pregunta.</small></div>
+    <div class="ocard"><b>API2 · Broken Authentication</b>Login o tokens débiles. <small>Mitiga: expiración, MFA, protección contra fuerza bruta.</small></div>
+    <div class="ocard"><b>API3 · Broken Object Property Level Authorization</b>Ver o modificar campos que no te corresponden. <small>Mitiga: filtrar propiedades de entrada y salida.</small></div>
+    <div class="ocard"><b>API4 · Unrestricted Resource Consumption</b>Sin límites de tamaño o frecuencia. <small>Mitiga: rate limiting, paginación, tope de body.</small></div>
+    <div class="ocard"><b>API5 · Broken Function Level Authorization</b>Un usuario normal llama a operaciones de administrador. <small>Mitiga: permisos por operación.</small></div>
+    <div class="ocard"><b>API6 · Unrestricted Access to Sensitive Business Flows</b>Automatizar un flujo de negocio (compras masivas). <small>Mitiga: límites y detección de abuso.</small></div>
+    <div class="ocard"><b>API7 · Server Side Request Forgery (SSRF)</b>La API hace peticiones a una URL que controla el atacante. <small>Mitiga: lista de destinos permitidos.</small></div>
+    <div class="ocard"><b>API8 · Security Misconfiguration</b>CORS abierto, errores detallados, configuración por defecto. <small>Mitiga: configuración endurecida y revisada.</small></div>
+    <div class="ocard"><b>API9 · Improper Inventory Management</b>Versiones viejas o endpoints olvidados. <small>Mitiga: inventario y retiro de versiones.</small></div>
+    <div class="ocard"><b>API10 · Unsafe Consumption of APIs</b>Confiar a ciegas en datos de otras APIs. <small>Mitiga: validar también lo que recibes de terceros.</small></div>
+  </div>
+
+  <h3 class="tsec"><span class="num">7</span> Ejemplo: el riesgo API1 (BOLA)</h3>
+  <div class="two">
+    <div class="bad"><b>❌ Vulnerable</b><pre class="plain">app.get('/orders/:orderId', auth, (req,res) =&gt; {
+  const order = orders.get(req.params.orderId);
+  res.json(order);   // cualquiera con token ve cualquier pedido
+});</pre></div>
+    <div class="good"><b>✅ Correcto</b><pre class="plain">app.get('/orders/:orderId', auth, (req,res) =&gt; {
+  const order = orders.get(req.params.orderId);
+  if (!order) return fail(res,404,'ORDER_NOT_FOUND','...');
+  if (order.customerId !== req.user.sub)
+    return fail(res,403,'FORBIDDEN','No access to this order');
+  res.json(order);
+});</pre></div>
+  </div>
+  <p>Estar autenticado no basta: hay que comprobar <b>de quién es el objeto</b>.</p>
+
+  <h3 class="tsec"><span class="num">8</span> Cómo se declara en OpenAPI</h3>
+  <p>Se define el esquema en <code>components/securitySchemes</code>, se aplica con <code>security</code> y se documentan los errores 401, 403 y 429. El archivo completo está en la página <a href="taller-codigo.html">Taller: cómo hacer el código</a> (pestaña «openapi + seguridad»).</p>
+<pre class="code" data-yaml>
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []          # se aplica a todas las operaciones
+paths:
+  /orders/{orderId}:
+    get:
+      responses:
+        '200':
+          description: Pedido encontrado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+</pre>
+  <div class="callout exam"><b class="t">Clave</b>Para dejar una operación pública (por ejemplo un catálogo) se escribe <code>security: []</code> en esa operación.</div>
+
+  <h3 class="tsec"><span class="num">9</span> En el código y en Postman</h3>
+  <div class="two">
+    <div><h4>🧩 En el backend</h4><ul><li>HTTPS siempre; el token viaja en <code>Authorization</code>.</li><li>Comparar tokens con <code>crypto.timingSafeEqual</code>.</li><li>Limitar el tamaño del body y las solicitudes por minuto.</li><li>Validar el body contra el schema.</li><li>Errores sin stack trace; detalle solo en el log.</li></ul>
+    <p>Ejemplos reales en el <code>server.js</code> opcional.</p></div>
+    <div><h4>📮 En Postman</h4><ul><li>Pestaña <b>Authorization</b> → tipo Bearer Token.</li><li>Guarda el token en una variable (<code>{{token}}</code>), no lo escribas fijo.</li><li>Usa variables de entorno para secretos.</li><li>No subas la colección con secretos a un repositorio.</li></ul></div>
+  </div>
+  <div class="cmd">API_TOKEN=secreto123 node server.js
+curl -i http://localhost:8080/orders                                   # 401
+curl -i -H 'Authorization: Bearer secreto123' http://localhost:8080/orders   # 200</div>
+  <p class="figcap">El token de ejemplo es solo para pruebas locales. En producción lo emite un servidor de autorización y expira.</p>
+
+  <h3 class="tsec"><span class="num">10</span> Errores de seguridad típicos</h3>
+  <div class="xo">
+    <div class="x">❌ Token o clave en la URL (<code>?token=...</code>)</div><div class="v">✅ En la cabecera <code>Authorization</code> (la URL queda en logs e historial)</div>
+    <div class="x">❌ Mensaje de error con el stack trace</div><div class="v">✅ Mensaje genérico + <code>correlationId</code>; detalle solo en el servidor</div>
+    <div class="x">❌ CORS abierto a cualquier origen con credenciales</div><div class="v">✅ Lista de orígenes permitidos</div>
+    <div class="x">❌ Confiar en que el cliente envía datos correctos</div><div class="v">✅ Validar siempre en el servidor</div>
+    <div class="x">❌ Secretos escritos en el código o en el repositorio</div><div class="v">✅ Variables de entorno o un gestor de secretos</div>
+    <div class="x">❌ HTTP sin cifrar</div><div class="v">✅ HTTPS (y HSTS) en producción</div>
+  </div>
+
+  <h3 class="tsec"><span class="num">11</span> Checklist de buenas prácticas</h3>
+  <div class="prog"><i id="skbar"></i></div>
+  <p id="sktxt" class="figcap"></p>
+  <div id="sklist"></div>
+
+  <h3 class="tsec"><span class="num">12</span> Qué escribir en tu README</h3>
+  <div class="callout idea"><b class="t">Ejemplo de párrafo</b>«Seguridad (fuera de alcance): en producción la API se expondría solo por HTTPS, exigiría un token Bearer (OAuth2 / JWT) en la cabecera Authorization y comprobaría que cada cliente solo accede a sus propios pedidos. Se limitaría la frecuencia de solicitudes (429) y los errores no revelarían detalles internos.»</div>
+
+  <h3 class="tsec"><span class="num">13</span> Verdadero o falso</h3>
+  <div id="vfs"></div>
+  <div class="bar"><button class="btn" id="vfsreset">↺ Reiniciar</button><span class="score" id="vfsscore">0 / 10</span></div>
+</section>
+
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

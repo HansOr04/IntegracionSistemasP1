@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablas comparativas · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="tablas">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block" id="tablas">
+  <h2 class="sec" style="--accent:var(--w2)">Tablas comparativas</h2>
+  <h3>1. File Transfer vs Shared Database vs RPC vs Messaging <span class="tag comp">Complemento</span></h3>
+  <div class="tw"><table><thead><tr><th>Criterio</th><th>File Transfer</th><th>Shared Database</th><th>RPC</th><th>Messaging</th></tr></thead><tbody>
+    <tr><td>Acoplamiento</td><td>Bajo a medio (formato y convención)</td><td>Alto (esquema)</td><td>Alto (firma y disponibilidad)</td><td>Bajo (canal y formato del mensaje)</td></tr>
+    <tr><td>Latencia</td><td>Alta (por lotes)</td><td>Inmediata</td><td>Baja, síncrona</td><td>Baja a media, asíncrona</td></tr>
+    <tr><td>Confiabilidad</td><td>Media (archivos parciales, reintentos manuales)</td><td>Depende de la BD (ACID)</td><td>Baja ante fallos: el servidor debe estar disponible</td><td>Alta (persistencia, reintentos, DLQ)</td></tr>
+    <tr><td>Complejidad</td><td>Baja</td><td>Media (esquema común)</td><td>Media</td><td>Alta (broker, semántica)</td></tr>
+    <tr><td>Escalabilidad</td><td>Media</td><td>Limitada (contención)</td><td>Limitada por llamadas síncronas</td><td>Alta</td></tr>
+    <tr><td>Formato de datos</td><td>Archivos CSV/XML</td><td>Modelo relacional unificado</td><td>Parámetros y stubs (IDL)</td><td>Mensajes con esquema</td></tr>
+    <tr><td>Caso de uso</td><td>Cargas nocturnas, legacy</td><td>Apps de un mismo equipo con consistencia fuerte</td><td>Consultas o comandos con respuesta inmediata</td><td>Flujos de negocio asíncronos y eventos</td></tr></tbody></table></div>
+
+  <h3>2. SOAP vs REST vs GraphQL vs gRPC <span class="tag comp">Complemento</span></h3>
+  <div class="tw"><table><thead><tr><th>Característica</th><th>SOAP</th><th>REST</th><th>GraphQL</th><th>gRPC</th></tr></thead><tbody>
+    <tr><td>Formato</td><td>XML (envelope)</td><td>JSON (también XML)</td><td>JSON, con consultas en lenguaje GraphQL</td><td>Protobuf binario</td></tr>
+    <tr><td>Transporte</td><td>HTTP, SMTP, JMS</td><td>HTTP</td><td>HTTP (normalmente POST /graphql)</td><td>HTTP/2</td></tr>
+    <tr><td>Contrato</td><td>WSDL</td><td>OpenAPI (recomendado)</td><td>Esquema tipado (SDL)</td><td>.proto</td></tr>
+    <tr><td>Estilo</td><td>Operaciones (RPC)</td><td>Recursos</td><td>Consultas sobre un grafo</td><td>RPC con streaming</td></tr>
+    <tr><td>Rendimiento</td><td>Medio-bajo (verboso)</td><td>Bueno; cacheable</td><td>Bueno; evita over/under-fetching; caché difícil</td><td>Muy alto</td></tr>
+    <tr><td>Navegador</td><td>Posible</td><td>Excelente</td><td>Excelente</td><td>Limitado (gRPC-Web)</td></tr>
+    <tr><td>Caso de uso</td><td>B2B empresarial y legacy con WS-Security</td><td>APIs públicas, CRUD, web y móvil</td><td>Front-ends con vistas variables y agregación</td><td>Microservicios internos, baja latencia, streaming</td></tr></tbody></table></div>
+
+  <h3>3. Elegir por interacción: REST, GraphQL, gRPC, webhook <span class="tag pdf">Del PDF</span></h3>
+  <div class="tw"><table><thead><tr><th>Criterio</th><th>REST</th><th>GraphQL</th><th>gRPC</th><th>Webhook</th></tr></thead><tbody>
+    <tr><td>Request / response</td><td>Sí</td><td>Sí</td><td>Sí</td><td>No es lo principal</td></tr>
+    <tr><td>Frontend / navegador</td><td>Excelente</td><td>Excelente</td><td>Limitado directo</td><td>N/A</td></tr>
+    <tr><td>Service-to-service</td><td>Bueno</td><td>Posible</td><td>Excelente</td><td>Complementario</td></tr>
+    <tr><td>Notificar a un tercero</td><td>No ideal</td><td>No ideal</td><td>Posible</td><td>Excelente</td></tr></tbody></table></div>
+
+  <h3>4. Métodos HTTP <span class="tag comp">Complemento</span> <span class="tag pdf">Del PDF</span></h3>
+  <div class="tw"><table><thead><tr><th>Método</th><th>Seguro</th><th>Idempotente</th><th>Uso</th><th>Respuesta típica</th></tr></thead><tbody>
+    <tr><td>GET</td><td>Sí</td><td>Sí</td><td>Consultar</td><td>200 (404 si no existe)</td></tr>
+    <tr><td>POST</td><td>No</td><td>No</td><td>Crear un nuevo recurso</td><td>201 Created + Location</td></tr>
+    <tr><td>PUT</td><td>No</td><td>Sí</td><td>Reemplazar completamente</td><td>200 o 204</td></tr>
+    <tr><td>PATCH</td><td>No</td><td>No garantizado</td><td>Modificar parcialmente</td><td>200 o 204</td></tr>
+    <tr><td>DELETE</td><td>No</td><td>Sí</td><td>Eliminar</td><td>204 No Content</td></tr>
+    <tr><td>HEAD / OPTIONS</td><td>Sí</td><td>Sí</td><td>Metadatos / capacidades</td><td>200</td></tr></tbody></table></div>
+
+  <h3>5. Códigos de estado HTTP más importantes <span class="tag pdf">Del PDF</span> <span class="tag comp">Complemento</span></h3>
+  <div class="tw"><table><thead><tr><th>Código</th><th>Nombre</th><th>Cuándo usarlo</th></tr></thead><tbody>
+    <tr><td>200</td><td>OK</td><td>Operación exitosa</td></tr>
+    <tr><td>201</td><td>Created</td><td>Recurso creado (con Location)</td></tr>
+    <tr><td>202</td><td>Accepted</td><td>Aceptado para procesamiento asíncrono</td></tr>
+    <tr><td>204</td><td>No Content</td><td>Éxito sin cuerpo (DELETE, PUT)</td></tr>
+    <tr><td>301 / 308</td><td>Moved / Permanent Redirect</td><td>El recurso cambió de URI de forma permanente</td></tr>
+    <tr><td>304</td><td>Not Modified</td><td>Caché válida (con ETag)</td></tr>
+    <tr><td>400</td><td>Bad Request</td><td>Request mal formado o inválido</td></tr>
+    <tr><td>401</td><td>Unauthorized</td><td>No autenticado</td></tr>
+    <tr><td>403</td><td>Forbidden</td><td>Autenticado pero sin permiso</td></tr>
+    <tr><td>404</td><td>Not Found</td><td>Recurso inexistente</td></tr>
+    <tr><td>405</td><td>Method Not Allowed</td><td>Método no soportado en ese recurso</td></tr>
+    <tr><td>409</td><td>Conflict</td><td>Conflicto con el estado actual (duplicado, versión)</td></tr>
+    <tr><td>422</td><td>Unprocessable Entity</td><td>Sintaxis válida pero regla de negocio o validación semántica incumplida</td></tr>
+    <tr><td>429</td><td>Too Many Requests</td><td>Rate limit excedido</td></tr>
+    <tr><td>500</td><td>Internal Server Error</td><td>Falla inesperada del servidor</td></tr>
+    <tr><td>502 / 503 / 504</td><td>Bad Gateway / Service Unavailable / Gateway Timeout</td><td>Dependencia caída, sobrecarga o tiempo agotado</td></tr></tbody></table></div>
+  <p>Familias: <b>2xx</b> éxito, <b>3xx</b> redirección, <b>4xx</b> error del consumidor, <b>5xx</b> error del proveedor.</p>
+</section>
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semana 2 · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="semana2">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week w2" id="s2">
+  <span class="badge">Semana 2</span>
+  <h2 class="sec">Patrones clásicos de integración</h2>
+  <div class="obj"><b>Objetivos de aprendizaje</b>
+    <ul>
+      <li>Describir los cuatro estilos de integración de Hohpe y Woolf.</li>
+      <li>Evaluarlos con criterios: acoplamiento, latencia, formato de datos, confiabilidad, escalabilidad, complejidad.</li>
+      <li>Reconocer sus debilidades y su rol en escenarios legacy.</li>
+      <li>Conocer Apache Camel y WSO2 y aplicar el razonamiento al caso Matrícula–Finanzas–CRM.</li>
+    </ul></div>
+  <div class="central">Idea central: los primeros estilos resuelven el intercambio de datos, pero cada uno impone un acoplamiento distinto (formato, esquema, disponibilidad) que hay que conocer para elegir.</div>
+
+  <article class="topic" id="s2-crit">
+    <h3>2.1 Criterios de decisión <span class="tag comp">Complemento</span></h3>
+    <div class="tw"><table><thead><tr><th>Criterio</th><th>Pregunta que responde</th></tr></thead><tbody>
+      <tr><td>Acoplamiento (coupling)</td><td>¿Cuánto sabe un sistema del otro? ¿Qué cambio lo rompe?</td></tr>
+      <tr><td>Oportunidad / latencia (timeliness)</td><td>¿Qué tan rápido llega un cambio al otro sistema?</td></tr>
+      <tr><td>Formato de datos</td><td>¿Qué estructura y qué convención se comparten?</td></tr>
+      <tr><td>Confiabilidad (reliability)</td><td>¿Qué pasa si el otro sistema o la red falla?</td></tr>
+      <tr><td>Escalabilidad (scalability)</td><td>¿Aguanta más volumen o más participantes?</td></tr>
+      <tr><td>Complejidad</td><td>¿Cuánta infraestructura y diseño exige?</td></tr>
+      <tr><td>Consistencia</td><td>¿Se requiere ver el mismo dato a la vez en ambos sistemas?</td></tr>
+    </tbody></table></div>
+    <div class="callout exam"><b class="t">Clave para el examen</b>No existe un «mejor» estilo universal. La respuesta correcta nombra el criterio dominante del escenario y justifica el compromiso (trade-off).</div>
+  </article>
+
+  <article class="topic" id="s2-ft">
+    <h3>2.2 Transferencia de archivos (File Transfer) <span class="tag pdf">Del PDF</span> <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> Una aplicación produce un archivo con los datos que otra necesita y esta lo consume más tarde. Es el estilo más antiguo y universal.</p>
+    <p><b>El archivo también tenía un contrato.</b> <span class="tag pdf">Del PDF</span> Aunque no se declare, el intercambio por archivos define acuerdos implícitos:</p>
+    <div class="tw"><table><thead><tr><th>Elemento</th><th>Implicación arquitectónica</th></tr></thead><tbody>
+      <tr><td>CSV / XML</td><td>Contrato de estructura de datos</td></tr>
+      <tr><td>Ruta / FTP / SFTP</td><td>Contrato de ubicación y acceso</td></tr>
+      <tr><td>Batch / horario</td><td>Contrato temporal</td></tr>
+      <tr><td>Nombre de archivo</td><td>Convención compartida</td></tr>
+      <tr><td>Logs / archivo de error</td><td>Retroalimentación diferida: baja dependencia temporal, mayor latencia</td></tr></tbody></table></div>
+    <div class="dg" data-d="ft"></div><div class="figcap">El archivo es el contrato entre ambos sistemas.</div>
+    <p><b>Idea clave (diapositiva).</b> <span class="tag pdf">Del PDF</span> No es un estilo «malo»: es apropiado cuando el contexto tolera procesamiento por lotes.</p>
+    <p><b>Ejemplo.</b> Finanzas exporta cada noche <code>pagos_20261025.csv</code> a una carpeta SFTP y Matrícula lo importa a las 6:00.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Muy simple; no exige APIs</li><li>Bajo acoplamiento temporal</li><li>Funciona con sistemas legacy</li><li>Los archivos sirven de evidencia y auditoría</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Latencia alta, datos desactualizados</li><li>Archivos parciales, bloqueos, duplicados</li><li>Formato libre, validación manual</li><li>Retroalimentación de errores diferida</li></ul></div></div>
+    <div class="when"><div><b>Cuándo usarlo</b><ul><li>Cargas nocturnas, conciliaciones, intercambio con terceros</li><li>Sistema legacy que solo exporta archivos</li></ul></div><div><b>Cuándo no</b><ul><li>Cuando otro sistema necesita el dato «ahora»</li></ul></div></div>
+    <p><b>Pregunta de transición (diapositiva).</b> <span class="tag pdf">Del PDF</span> «¿Y si Inventario necesita el pedido ahora?». Hay que decidir si se sigue esperando un CSV o se expone una capacidad: de ahí nace la API.</p>
+    <h4>Defensa del taller de archivos <span class="tag pdf">Del PDF</span></h4>
+    <p>Por grupo, 5 a 7 minutos: demostración funcional antes que explicación teórica; ejecutar con un <b>archivo de entrada real</b>; mostrar entrada, validación, transformación y salida; evidenciar registros válidos, inválidos y errores; explicar las decisiones de arquitectura. Se evalúa la comprensión de los puntos de acoplamiento, las decisiones de integración y el tratamiento de errores. Consigna: muestren evidencia, no solo código.</p>
+  </article>
+
+  <article class="topic" id="s2-db">
+    <h3>2.3 Base de datos compartida (Shared Database) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> Varias aplicaciones leen y escriben en una misma base de datos con un esquema común, que actúa como punto de integración.</p>
+    <div class="dg" data-d="db"></div><div class="figcap">Todos dependen del mismo esquema.</div>
+    <p><b>Cómo funciona.</b> El esquema unificado se diseña para todos. Las transacciones ACID mantienen la consistencia: lo que escribe una aplicación se ve de inmediato.</p>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Datos siempre consistentes y actuales</li><li>Sin duplicación ni sincronización</li><li>Transacciones ACID</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Acoplamiento fuerte al esquema: cambiar una tabla puede romper a todos</li><li>Cada app tiene necesidades distintas; el modelo único es un compromiso difícil</li><li>Contención, bloqueos y cuello de botella</li><li>No funciona entre organizaciones o sistemas empaquetados</li></ul></div></div>
+    <div class="when"><div><b>Cuándo usarlo</b><ul><li>Aplicaciones de un mismo equipo y dominio que exigen consistencia fuerte</li></ul></div><div><b>Cuándo no</b><ul><li>Sistemas con dueños distintos, productos de terceros o necesidad de evolucionar de forma independiente</li></ul></div></div>
+  </article>
+
+  <article class="topic" id="s2-rpc">
+    <h3>2.4 Invocación remota de procedimientos (RPC / Remote Procedure Invocation) <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> Una aplicación expone una funcionalidad como procedimiento que otra invoca de forma remota, como si fuera una llamada local. Ejemplos: CORBA, Java RMI, DCOM, SOAP/RPC, gRPC.</p>
+    <p><b>Cómo funciona.</b> El cliente llama a un stub generado a partir de una interfaz (IDL); el stub serializa los parámetros y los envía por la red; el skeleton del servidor los deserializa, ejecuta y devuelve el resultado.</p>
+    <div class="dg" data-d="rpc"></div><div class="figcap">RPC: llamada síncrona con respuesta inmediata.</div>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Encapsula datos y lógica: el cliente no ve el modelo interno</li><li>Respuesta inmediata</li><li>Modelo mental familiar</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Acoplamiento temporal: si el servidor falla, el cliente falla</li><li>Ilusión de «llamada local» que oculta latencia y fallos de red</li><li>Acoplamiento a la firma del procedimiento</li></ul></div></div>
+    <div class="callout err"><b class="t">Error común</b>Tratar una llamada remota como local. Ignora las falacias de la computación distribuida (la red es confiable, la latencia es cero...). Una llamada remota puede fallar, tardar o ejecutarse dos veces.</div>
+  </article>
+
+  <article class="topic" id="s2-msg">
+    <h3>2.5 Mensajería (Messaging): el cuarto estilo de EIP <span class="tag comp">Complemento</span></h3>
+    <p><b>Definición.</b> Las aplicaciones intercambian paquetes de datos pequeños y frecuentes llamados mensajes, a través de un canal gestionado por un sistema de mensajería (message broker).</p>
+    <p><b>Cómo funciona.</b> El productor envía y continúa; el canal guarda el mensaje (store-and-forward) hasta que el consumidor está disponible. Existen colas (punto a punto) y tópicos (publish/subscribe). Además, reintentos, colas de mensajes fallidos (dead letter queue, DLQ) y garantías de entrega.</p>
+    <div class="dg" data-d="msg"></div><div class="figcap">El canal desacopla en el tiempo al productor y al consumidor.</div>
+    <div class="pc"><div class="pro"><b>Ventajas</b><ul><li>Bajo acoplamiento temporal y de ubicación</li><li>Alta confiabilidad y buena escalabilidad</li><li>Latencia baja, procesamiento asíncrono</li></ul></div>
+    <div class="con"><b>Desventajas</b><ul><li>Requiere infraestructura (broker)</li><li>Complejidad: orden, duplicados, consistencia eventual</li><li>Depuración más difícil</li></ul></div></div>
+    <p>Es la base conceptual de EAI y EDA, y el estilo en el que se organiza el catálogo de patrones de EIP (canales, enrutadores, transformadores, endpoints).</p>
+  </article>
+
+  <article class="topic" id="s2-tools">
+    <h3>2.6 Herramientas: Apache Camel y WSO2 <span class="tag comp">Complemento</span></h3>
+    <p><b>Apache Camel (overview).</b> Framework de integración de código abierto que implementa los patrones EIP. Conceptos: ruta (route), endpoint (identificado por URI), componente (component), procesador (processor), intercambio (exchange) y contexto (CamelContext). Se configura con un DSL en Java, XML o YAML.</p>
+    <div class="dg" data-d="camel"></div>
+    <pre class="plain">from("file:data/entrada?noop=true")      // endpoint origen: carpeta
+    .unmarshal().csv()                    // transforma CSV a objetos
+    .filter(simple("${body[estado]} == 'PAGADO'"))
+    .marshal().json()                     // transforma a JSON
+    .to("http://localhost:8080/pagos");   // endpoint destino: API</pre>
+    <p><b>WSO2 Integration Studio / Enterprise Integrator (taller de transferencia de archivos).</b> Integration Studio es el IDE con el que se diseñan artefactos de integración que se ejecutan en el Micro Integrator. En el taller se implementa un flujo de File Transfer: leer archivos de una carpeta de entrada (transporte VFS o conector de archivos), validar y transformar, y escribir una salida más un archivo de errores.</p>
+    <div class="callout idea"><b class="t">Idea</b>Camel y WSO2 muestran que los patrones son el vocabulario y las herramientas son la implementación: el mismo patrón se ve en ambos.</div>
+  </article>
+
+  <article class="topic" id="s2-role">
+    <h3>2.7 Roleplay: Matrícula, Finanzas y CRM <span class="tag comp">Complemento</span></h3>
+    <p>En clase se simula una universidad con tres sistemas: Matrícula (académico), Finanzas (cobros, probablemente legacy) y CRM (relación con estudiantes). La tarea es decidir qué estilo usar entre cada par y justificarlo con los criterios de 2.1. La resolución modelo está en la sección <a href="practica.html">Práctica de API</a>.</p>
+    <div class="dg" data-d="role"></div>
+  </article>
+
+  <article class="topic" id="s2-lim">
+    <h3>2.8 Limitaciones y rol en escenarios legacy <span class="tag comp">Complemento</span></h3>
+    <ul>
+      <li><b>File Transfer:</b> latencia y fragilidad operativa; útil como puente con sistemas legacy sin interfaces modernas.</li>
+      <li><b>Shared Database:</b> acoplamiento al esquema; evitarla entre sistemas con dueños distintos.</li>
+      <li><b>RPC:</b> acoplamiento temporal y a la firma; el origen del movimiento hacia interfaces explícitas (APIs).</li>
+      <li><b>Messaging:</b> el más flexible, pero con mayor complejidad.</li>
+    </ul>
+    <div class="callout exam"><b class="t">Clave para el examen</b>Los enfoques tradicionales no «desaparecen»: en un entorno legacy suelen ser la única opción realista y conviven con APIs y eventos.</div>
+  </article>
+</section>
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
