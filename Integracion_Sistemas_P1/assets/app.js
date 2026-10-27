@@ -19,6 +19,7 @@ const NAV=[
  {id:'taller',href:'taller.html',t:'🧪 Taller (repaso)',c:'n3'},
  {id:'taller-codigo',href:'taller-codigo.html',t:'🛠️ Taller: cómo hacer el código',c:'n3'},
  {id:'seguridad',href:'seguridad.html',t:'🔐 Seguridad de APIs',c:'n3'},
+ {id:'articulo',href:'articulo.html',t:'📄 Artículo: parlamento',c:'n2'},
  {id:'linea-tiempo',href:'linea-tiempo.html',t:'🕰️ Línea de tiempo'},
  {id:'tablas',href:'tablas.html',t:'📊 Tablas comparativas'},
  {id:'practica',href:'practica.html',t:'🧭 Práctica de API'},
@@ -26,7 +27,7 @@ const NAV=[
  {id:'autoevaluacion',href:'autoevaluacion.html',t:'✅ Autoevaluación'},
  {id:'cheat-sheet',href:'cheat-sheet.html',t:'🗒️ Cheat sheet'}
 ];
-const GROUPS=[['Contenido',['semana1','semana2','semana3']],['Taller',['taller','taller-codigo','seguridad']],['Recursos',['linea-tiempo','tablas','practica']],['Evaluación',['glosario','autoevaluacion','cheat-sheet']]];
+const GROUPS=[['Contenido',['semana1','semana2','semana3']],['Taller',['taller','taller-codigo','seguridad']],['Recursos',['linea-tiempo','tablas','practica']],['Evaluación',['articulo','glosario','autoevaluacion','cheat-sheet']]];
 const CUR=document.body.dataset.page;
 (function buildLayout(){
   const byId={};NAV.forEach(n=>byId[n.id]=n);
@@ -665,3 +666,42 @@ DG.oauth={w:700,h:230,alt:'Flujo OAuth 2.0 simplificado',boxes:[
  {id:'p',x:520,y:90,w:160,t:'API de pedidos\n(Resource Server)'}],
  arrows:[{f:'c',t:'a',d:'h',l:'1 · credenciales'},{f:'a',t:'c',d:'h',dash:1,o:24,l:'2 · access_token'},{f:'c',t:'p',l:'3 · Bearer token'}]};
 $$('.dg[data-d="oauth"]').forEach(el=>{el.innerHTML=drawDiagram(DG.oauth)});
+
+/* quiz de selección múltiple del artículo */
+(function(){
+  const box=document.getElementById('art-quiz');if(!box)return;
+  const Q=[
+   ['¿Cuál fue el objetivo principal del artículo?',['Proponer una nueva ley de transparencia.','Mejorar la interoperabilidad en el control parlamentario.','Aplicar patrones de integración empresarial a procesos legislativos.','Crear un nuevo sistema operativo legislativo.'],[1,2],'El resumen habla de facilitar la interoperabilidad entre sistemas usando patrones de integración empresarial.'],
+   ['¿Qué tecnología se utilizó para estructurar semánticamente los documentos legales?',['HTML5','Akoma Ntoso','LEOS','JSON-LD'],[1,2],'Akoma Ntoso es el estándar semántico; LEOS es el editor que trabaja con él.'],
+   ['¿Cuál es la función del equipo Hellenic OCR?',['Transformar preguntas parlamentarias en datos abiertos.','Aplicar OCR y validar datos legislativos.','Diseñar leyes nuevas para Grecia.','Crear campañas políticas'],[0,1],'Es el equipo que trata la interoperabilidad de datos parlamentarios: OCR, validación y apertura de datos. No legisla ni hace campañas.'],
+   ['¿Por qué se eligieron las preguntas parlamentarias como caso de estudio?',['Por su estructura simple y repetitiva.','Porque ya estaban en formato digital.','Porque son útiles para analizar la dinámica política','Porque no requieren procesamiento.'],[0,2],'Su formato regular facilita automatizar y sirven para estudiar la actividad política. Sí requieren procesamiento.'],
+   ['¿Qué tipo de arquitectura se propuso en el artículo?',['Cliente-servidor tradicional.','Plataforma de integración como servicio (iPaaS)','Blockchain descentralizado.','Arquitectura basada en conectores.'],[1,3],'Plataforma de integración construida con conectores. Descarta cliente-servidor clásico y blockchain.'],
+   ['¿Qué características tienen los conectores propuestos?',['Son reutilizables.','Pueden configurarse para distintos sistemas','Están escritos en COBOL','Implementan APIs REST con Node.js'],[0,1,3],'Reutilizables, configurables y hechos con Node.js. COBOL no aplica.'],
+   ['¿Qué permite el uso del estándar Akoma Ntoso?',['Modelar documentos legislativos con semántica.','Crear páginas web visuales.','Vincular preguntas parlamentarias con otros textos legales.','Reemplazar todos los estándares legales existentes.'],[0,2],'Da significado a los documentos y permite enlazarlos. No es un estándar visual ni sustituye a todos los demás.'],
+   ['¿Qué beneficios ofrece convertir preguntas parlamentarias en datos abiertos?',['Fomentar la transparencia','Facilitar análisis político y académico','Eliminar la necesidad de parlamentarios','Incrementar la rendición de cuentas'],[0,1,3],'Transparencia, análisis y rendición de cuentas. Nadie sustituye a los parlamentarios.'],
+   ['¿Qué tecnologías se mencionan para implementar los conectores?',['Node.js','mongodb-queue','Oracle Forms','MongoDB'],[0,1,3],'Node.js, MongoDB y la cola mongodb-queue. Oracle Forms no aparece.'],
+   ['¿Qué funcionalidades incluyen los conectores propuestos?',['Motor gráfico 3D','Procesador de mensajes','Despachador de mensajes','Receptor de mensajes'],[1,2,3],'Receptor, procesador y despachador de mensajes: el ciclo clásico de Messaging.']
+  ];
+  let ok;
+  function render(){
+    ok=0;
+    box.innerHTML=Q.map((q,i)=>'<div class="vfr" data-i="'+i+'"><div><b>'+(i+1)+'.</b> '+q[0]+' <small>(elige '+q[2].length+')</small></div><div class="ckg">'+q[1].map((o,j)=>'<label><input type="checkbox" data-j="'+j+'"><span>'+o+'</span></label>').join('')+'</div><div class="b"><button class="btn primary">Comprobar</button></div><div class="fb"></div></div>').join('');
+    box.querySelectorAll('.vfr').forEach(row=>{
+      const i=+row.dataset.i,q=Q[i];
+      row.querySelector('.btn').onclick=e=>{
+        if(row.dataset.done)return;row.dataset.done=1;
+        const boxes=[...row.querySelectorAll('input')];
+        const sel=boxes.filter(b=>b.checked).map(b=>+b.dataset.j);
+        const good=sel.length===q[2].length&&q[2].every(j=>sel.includes(j));
+        if(good)ok++;
+        boxes.forEach(b=>{b.disabled=true;const j=+b.dataset.j;b.parentElement.classList.toggle('done',q[2].includes(j))});
+        row.classList.add(good?'ok':'bad');e.target.disabled=true;
+        row.querySelector('.fb').innerHTML=(good?'✔ Correcto. ':'✘ Las correctas están resaltadas. ')+q[3];
+        document.getElementById('art-score').textContent=ok+' / '+Q.length;
+      };
+    });
+    document.getElementById('art-score').textContent='0 / '+Q.length;
+  }
+  document.getElementById('art-reset').onclick=render;
+  render();
+})();

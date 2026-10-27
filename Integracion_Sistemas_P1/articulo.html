@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artículo: parlamento · Integración de Sistemas P1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="express" data-page="articulo">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkp" d="M0 0L10 5L0 10z"/></marker></defs></svg>
+<main>
+<div class="wrap">
+<section class="block week w2" id="articulo">
+  <span class="badge">Artículo</span>
+  <h2 class="sec">📄 Artículo: patrones de integración en el control parlamentario</h2>
+  <p><span class="tag comp">Complemento</span> Leventis, Anastasiou y Fitsilis (2020). <i>Application of enterprise integration patterns for the digital transformation of parliamentary control</i>. Actas de la 13.ª ICEGOV, pp. 738-741. <a href="https://dl.acm.org/doi/10.1145/3428502.3428612" target="_blank" rel="noopener">Ver en ACM</a>.</p>
+  <div class="central">🎯 Idea central: en vez de integrar cada sistema con código a medida, se construyen <b>conectores reutilizables y configurables</b> basados en patrones de integración (EIP) y se combinan según el caso.</div>
+
+  <h3 class="tsec"><span class="num">1</span> El artículo en 5 ideas</h3>
+  <div class="tcards">
+    <div class="tcard"><div class="ic">⚠️</div><h4>Problema</h4><p>Cada vez hay más fuentes de datos, estándares y sistemas legales. Mantener la interoperabilidad es difícil.</p></div>
+    <div class="tcard"><div class="ic">🧩</div><h4>Propuesta</h4><p>Una arquitectura extensible basada en <b>conectores</b> que aplican patrones de integración.</p></div>
+    <div class="tcard"><div class="ic">📜</div><h4>Estándar</h4><p><b>Akoma Ntoso</b> modela los documentos legislativos con semántica. <b>LEOS</b> es el editor que lo usa.</p></div>
+    <div class="tcard"><div class="ic">❓</div><h4>Caso de estudio</h4><p>Preguntas parlamentarias escritas del Parlamento Helénico, ya validadas.</p></div>
+    <div class="tcard"><div class="ic">🔓</div><h4>Resultado</h4><p>Preguntas convertidas en datos abiertos: más transparencia, análisis y rendición de cuentas.</p></div>
+  </div>
+
+  <h3 class="tsec"><span class="num">2</span> Cómo encaja con la materia</h3>
+  <div class="tw"><table><thead><tr><th>En el artículo</th><th>En la clase</th></tr></thead><tbody>
+    <tr><td>Conectores que reciben, procesan y despachan mensajes</td><td>Estilo <b>Messaging</b> de los EIP</td></tr>
+    <tr><td>Conectores reutilizables y configurables</td><td>Bajo acoplamiento y alta cohesión</td></tr>
+    <tr><td>Componer conectores para distintos casos</td><td>Idea de Apache Camel: rutas y componentes</td></tr>
+    <tr><td>Cola de mensajes (mongodb-queue)</td><td>Canal de mensajes y desacople en el tiempo</td></tr>
+  </tbody></table></div>
+  <div class="callout exam"><b class="t">Para el examen</b>Memoriza el trío del conector: <b>receptor, procesador y despachador</b> de mensajes. Y la tecnología: <b>Node.js, MongoDB y mongodb-queue</b>.</div>
+  <div class="callout warn"><b class="t">Ojo</b>Las respuestas de abajo se apoyan en el resumen oficial del artículo y en el razonamiento por descarte. Los detalles de Node.js, mongodb-queue y los componentes del conector no aparecen en ese resumen: confírmalos con el texto completo si puedes.</div>
+
+  <h3 class="tsec"><span class="num">3</span> Preguntas con respuestas (practica)</h3>
+  <p>Marca las opciones que creas correctas y pulsa <b>Comprobar</b>. Cada pregunta indica cuántas son.</p>
+  <div id="art-quiz"></div>
+  <div class="bar"><button class="btn" id="art-reset">↺ Reiniciar</button><span class="score" id="art-score">0 / 10</span></div>
+</section>
+
+<footer>Material de estudio · Integración de Sistemas (ISWZ3104) · UDLA. Basado en diapositivas y guías de clase de Darío Villamarín G. (Semana 3) y complementado con conocimiento técnico general; verifica siempre con tu docente y los PDFs oficiales.</footer>
+</div>
+</main>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
